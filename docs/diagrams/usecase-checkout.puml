@@ -41,8 +41,10 @@ UC_Validate -[hidden]right- UC_Create
 UC_Create -[hidden]right- UC_Pay
 
 legend bottom
-  Ngoài phạm vi UC-01: xem menu, chọn size và topping, quản lý giỏ hàng, theo dõi đơn,
-  hủy đơn chưa thanh toán, chuẩn bị món sau khi đơn được xác nhận, giao hàng tận nơi, hoàn tiền.
+  Ngoài phạm vi UC-01:
+  - Có trong MVP nhưng là use case khác: xem menu, chọn size và topping, quản lý giỏ hàng,
+    theo dõi đơn, hủy đơn chưa thanh toán, nhân viên chuẩn bị món sau khi đơn được xác nhận.
+  - Không có trong MVP: giao hàng tận nơi, hoàn tiền, thanh toán tiền thật.
 endlegend
 
 @enduml

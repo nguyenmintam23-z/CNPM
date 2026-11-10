@@ -76,7 +76,9 @@ Khách hàng chọn **Đặt hàng** tại trang giỏ hàng.
 
 **Hệ thống làm:** kiểm tra đăng nhập và quyền; hiển thị thông tin đơn để khách xác nhận; kiểm tra giỏ hàng và tồn kho; tính tổng tiền phía máy chủ; tạo đơn và giữ tồn kho trong một transaction; chống tạo đơn trùng; thanh toán Ví/Thẻ mô phỏng có idempotency key; giải phóng tồn kho và cho thanh toán lại khi thất bại.
 
-**Hệ thống không làm:** thanh toán bằng tiền thật hoặc lưu thông tin thẻ; giao hàng tận nơi (khách nhận đồ uống tại cửa hàng); chuẩn bị món sau khi đơn được xác nhận; hoàn tiền. Xem menu, chọn size và topping, quản lý giỏ hàng, theo dõi đơn và hủy đơn chưa thanh toán là các use case khác.
+**Hệ thống không làm (ngoài MVP):** thanh toán bằng tiền thật hoặc lưu thông tin thẻ; giao hàng tận nơi (khách nhận đồ uống tại quầy); hoàn tiền.
+
+**Có trong MVP nhưng thuộc use case khác:** xem menu, chọn size và topping, quản lý giỏ hàng, theo dõi đơn, hủy đơn chưa thanh toán và nhân viên chuẩn bị món sau khi đơn được xác nhận.
 
 ## 10. Liên kết yêu cầu
 
