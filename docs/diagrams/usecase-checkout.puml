@@ -1,0 +1,48 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam nodesep 25
+skinparam ranksep 60
+
+title Sơ đồ use case - UC-01: Đặt và thanh toán đơn hàng
+
+actor "Khách hàng" as Customer
+actor "Dịch vụ thanh toán\nmô phỏng" as PaymentSvc
+
+rectangle "Hệ thống BrewLite - phạm vi UC-01" {
+  usecase "Đặt và thanh toán\nđơn hàng" as UC01 #FFF2CC
+
+  usecase "Xác thực đăng nhập\nvà quyền CUSTOMER" as UC_Auth
+  usecase "Xác nhận\nthông tin đơn" as UC_Confirm
+  usecase "Kiểm tra giỏ hàng, tồn kho\nvà tính tổng tiền" as UC_Validate
+  usecase "Tạo đơn và\ngiữ tồn kho" as UC_Create
+  usecase "Thanh toán Ví/Thẻ\nmô phỏng" as UC_Pay
+
+  usecase "Đăng nhập\n(hoặc đăng nhập lại)" as UC_Relogin
+  usecase "Thử lại\nthanh toán" as UC_Retry
+}
+
+Customer -right- UC01
+UC_Pay -right- PaymentSvc
+
+UC01 .down.> UC_Auth : <<include>>
+UC01 .down.> UC_Confirm : <<include>>
+UC01 .down.> UC_Validate : <<include>>
+UC01 .down.> UC_Create : <<include>>
+UC01 .down.> UC_Pay : <<include>>
+
+UC_Auth <.down. UC_Relogin : <<extend>>\n[chưa đăng nhập /\nphiên hết hạn]
+UC_Pay <.down. UC_Retry : <<extend>>\n[thanh toán thất bại]
+
+UC_Auth -[hidden]right- UC_Confirm
+UC_Confirm -[hidden]right- UC_Validate
+UC_Validate -[hidden]right- UC_Create
+UC_Create -[hidden]right- UC_Pay
+
+legend bottom
+  Ngoài phạm vi UC-01: xem menu, tùy chỉnh đồ uống, quản lý giỏ hàng, theo dõi đơn,
+  hủy đơn chưa thanh toán, chuẩn bị món sau khi đơn được xác nhận, giao hàng tận nơi, hoàn tiền.
+endlegend
+
+@enduml
