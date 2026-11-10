@@ -12,13 +12,16 @@ actor "Quản lý" as Manager
 actor "Dịch vụ thanh toán\nmô phỏng" as PaymentSvc
 
 rectangle "Hệ thống BrewLite (một cửa hàng)" {
-  rectangle "Chọn món và tài khoản (không cần đăng nhập)" {
+  rectangle "Tài khoản (không cần đăng nhập)" {
+    usecase "Đăng ký tài khoản" as UC_Register
+    usecase "Đăng nhập" as UC_Login
+  }
+
+  rectangle "Chọn món (khách đã đăng nhập)" {
     usecase "Xem menu" as UC_Menu
     usecase "Xem chi tiết đồ uống" as UC_Detail
     usecase "Chọn size và topping" as UC_Custom
     usecase "Quản lý giỏ hàng" as UC_Cart
-    usecase "Đăng ký tài khoản" as UC_Register
-    usecase "Đăng nhập" as UC_Login
   }
 
   rectangle "Đặt hàng (khách đã đăng nhập)" {
@@ -64,10 +67,9 @@ end note
 
 legend right
   Quy ước
-  - Khách hàng xem menu, chọn size/topping và dùng giỏ hàng
-    mà không cần đăng nhập.
-  - Khách hàng phải đăng nhập trước khi đặt đơn, theo dõi,
-    xem lịch sử và hủy đơn.
+  - Chưa đăng nhập: chỉ đăng ký hoặc đăng nhập.
+  - Khách hàng phải đăng nhập trước khi xem menu, chọn món,
+    dùng giỏ hàng, đặt đơn, theo dõi, xem lịch sử và hủy đơn.
   - Chỉ hủy được đơn đang Chờ thanh toán.
   - Nhân viên và quản lý dùng tài khoản được cấp, không tự đăng ký.
 endlegend

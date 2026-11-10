@@ -10,7 +10,7 @@ Tệp nguồn: [`../diagrams/usecase-checkout.puml`](../diagrams/usecase-checkou
 
 | Actor | Loại | Vai trò trong use case |
 |---|---|---|
-| Khách hàng | Actor chính | Xác nhận đặt đơn từ giỏ hàng và thanh toán. Phải đăng nhập với vai trò `CUSTOMER` trước khi đơn được tạo. |
+| Khách hàng | Actor chính | Đã đăng nhập với vai trò `CUSTOMER`; xác nhận đặt đơn từ giỏ hàng và thanh toán. |
 | Dịch vụ thanh toán mô phỏng | Actor phụ | Nhận yêu cầu thanh toán Ví/Thẻ mô phỏng và trả kết quả thành công hoặc thất bại. |
 
 ## 3. Trigger
@@ -19,8 +19,8 @@ Khách hàng chọn **Đặt hàng** tại trang giỏ hàng.
 
 ## 4. Tiền điều kiện
 
-1. Khách hàng đang ở trang giỏ hàng (có thể chưa đăng nhập).
-2. Giỏ hàng có ít nhất một món kèm tùy chọn đã chọn.
+1. Khách hàng đã đăng nhập với vai trò `CUSTOMER` (nhóm quy định phải đăng nhập mới xem được menu và đặt món).
+2. Khách hàng đang ở trang giỏ hàng; giỏ hàng có ít nhất một món kèm tùy chọn đã chọn.
 
 ## 5. Hậu điều kiện
 
@@ -34,7 +34,7 @@ Khách hàng chọn **Đặt hàng** tại trang giỏ hàng.
 
 1. Khách hàng mở giỏ hàng, xem món, tùy chọn, số lượng và tổng tạm tính.
 2. Khách hàng chọn **Đặt hàng**.
-3. Hệ thống kiểm tra khách đã đăng nhập, phiên đăng nhập còn hiệu lực và vai trò là `CUSTOMER`.
+3. Hệ thống kiểm tra phiên đăng nhập (JWT) còn hiệu lực và vai trò là `CUSTOMER`.
 4. Hệ thống hiển thị thông tin đơn trước khi xác nhận: món, size, topping, số lượng và tổng tạm tính.
 5. Khách hàng kiểm tra thông tin và xác nhận đặt đơn.
 6. Hệ thống kiểm tra món, size, topping, số lượng và tồn kho; tính tổng tiền theo dữ liệu phía máy chủ.
@@ -47,10 +47,10 @@ Khách hàng chọn **Đặt hàng** tại trang giỏ hàng.
 
 ## 7. Luồng thay thế
 
-**A1 — Chưa đăng nhập hoặc phiên đăng nhập hết hạn (bước 3)**
-1. Hệ thống yêu cầu khách đăng nhập (hoặc đăng ký nếu chưa có tài khoản) và giữ nguyên giỏ hàng.
-2. Đăng nhập thành công: khách thấy lại các món đã chọn; quay lại bước 3.
-3. Đăng nhập thất bại hoặc khách bỏ dở: use case kết thúc, không tạo đơn.
+**A1 — Phiên đăng nhập hết hạn hoặc không còn hợp lệ (bước 3)**
+1. Hệ thống từ chối yêu cầu đặt đơn, yêu cầu khách đăng nhập lại và giữ nguyên giỏ hàng.
+2. Đăng nhập lại thành công: khách thấy lại các món đã chọn; quay lại bước 3.
+3. Đăng nhập lại thất bại hoặc khách bỏ dở: use case kết thúc, không tạo đơn.
 
 **A2 — Thanh toán thất bại (bước 11)**
 1. Dịch vụ thanh toán mô phỏng trả kết quả **thất bại**.
@@ -93,7 +93,7 @@ Khách hàng chọn **Đặt hàng** tại trang giỏ hàng.
 | FR-18 | Nhận diện yêu cầu đặt đơn gửi lại | E4 |
 | FR-22 | Cung cấp và xác nhận thông tin cần thiết khi đặt hàng | 4, 5, E1 |
 | FR-04, FR-05, FR-19 | Thêm, sửa, xóa món trong giỏ (use case khác, tạo tiền điều kiện) | Tiền điều kiện 2, 1 |
-| FR-20, FR-21 | Đăng ký, đăng nhập | A1 |
+| FR-21 | Đăng nhập (tiền điều kiện) và đăng nhập lại | Tiền điều kiện 1, A1 |
 | FR-23 | Hủy đơn chưa thanh toán (use case khác) | A2.5 |
 | NFR-02 | Bảo mật xác thực JWT và phân quyền | 3, E8 |
 | NFR-04 | Backend kiểm tra dữ liệu đầu vào | 6, E1 |
