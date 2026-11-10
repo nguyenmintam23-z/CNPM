@@ -8,7 +8,7 @@ title Sơ đồ use case tổng quát - Hệ thống BrewLite
 
 actor "Khách hàng" as Customer
 actor "Nhân viên quầy" as Staff
-actor "Quản lý cửa hàng" as Manager
+actor "Quản lý" as Manager
 actor "Dịch vụ thanh toán\nmô phỏng" as PaymentSvc
 
 rectangle "Hệ thống BrewLite (một cửa hàng)" {
