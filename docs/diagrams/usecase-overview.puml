@@ -1,0 +1,77 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam actorStyle default
+
+title Sơ đồ use case tổng quát - Hệ thống BrewLite
+
+actor "Khách hàng" as Customer
+actor "Nhân viên quầy" as Staff
+actor "Quản lý" as Manager
+actor "Dịch vụ thanh toán\nmô phỏng" as PaymentSvc
+
+rectangle "Hệ thống BrewLite (một cửa hàng)" {
+  rectangle "Tài khoản (không cần đăng nhập)" {
+    usecase "Đăng ký tài khoản" as UC_Register
+    usecase "Đăng nhập" as UC_Login
+  }
+
+  rectangle "Chọn món (khách đã đăng nhập)" {
+    usecase "Xem menu" as UC_Menu
+    usecase "Xem chi tiết đồ uống" as UC_Detail
+    usecase "Chọn size và topping" as UC_Custom
+    usecase "Quản lý giỏ hàng" as UC_Cart
+  }
+
+  rectangle "Đặt hàng (khách đã đăng nhập)" {
+    usecase "Đặt và thanh toán đơn hàng\n(UC-01)" as UC_Checkout #FFF2CC
+    usecase "Theo dõi trạng thái đơn" as UC_Track
+    usecase "Xem lịch sử đơn hàng" as UC_History
+    usecase "Hủy đơn chưa thanh toán" as UC_Cancel
+  }
+
+  rectangle "Vận hành cửa hàng" {
+    usecase "Xem đơn đã xác nhận" as UC_Orders
+    usecase "Cập nhật trạng thái đơn" as UC_UpdateStatus
+    usecase "Tra cứu đơn của cửa hàng" as UC_Lookup
+  }
+}
+
+Customer -- UC_Menu
+Customer -- UC_Detail
+Customer -- UC_Custom
+Customer -- UC_Cart
+Customer -- UC_Register
+Customer -- UC_Login
+Customer -- UC_Checkout
+Customer -- UC_Track
+Customer -- UC_History
+Customer -- UC_Cancel
+
+Staff -- UC_Login
+Staff -- UC_Orders
+Staff -- UC_UpdateStatus
+
+Manager -- UC_Login
+Manager -- UC_Lookup
+
+UC_Checkout -- PaymentSvc
+
+note bottom of UC_Checkout
+  Use case trọng tâm, đặc tả trong
+  use-case-checkout.md. Khách nhận
+  đồ uống tại cửa hàng; thanh toán
+  Ví/Thẻ mô phỏng.
+end note
+
+legend right
+  Quy ước
+  - Chưa đăng nhập: chỉ đăng ký hoặc đăng nhập.
+  - Khách hàng phải đăng nhập trước khi xem menu, chọn món,
+    dùng giỏ hàng, đặt đơn, theo dõi, xem lịch sử và hủy đơn.
+  - Chỉ hủy được đơn đang Chờ thanh toán.
+  - Nhân viên và quản lý dùng tài khoản được cấp, không tự đăng ký.
+endlegend
+
+@enduml
