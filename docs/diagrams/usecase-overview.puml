@@ -6,13 +6,10 @@ skinparam actorStyle default
 
 title Sơ đồ use case tổng quát - Hệ thống BrewLite
 
-actor "Khách vãng lai" as Guest
 actor "Khách hàng" as Customer
 actor "Nhân viên quầy" as Staff
 actor "Quản lý cửa hàng" as Manager
 actor "Dịch vụ thanh toán\nmô phỏng" as PaymentSvc
-
-Guest <|-- Customer
 
 rectangle "Hệ thống BrewLite (một cửa hàng)" {
   rectangle "Chọn món và tài khoản (không cần đăng nhập)" {
@@ -38,12 +35,11 @@ rectangle "Hệ thống BrewLite (một cửa hàng)" {
   }
 }
 
-Guest -- UC_Menu
-Guest -- UC_Detail
-Guest -- UC_Custom
-Guest -- UC_Cart
-Guest -- UC_Register
-
+Customer -- UC_Menu
+Customer -- UC_Detail
+Customer -- UC_Custom
+Customer -- UC_Cart
+Customer -- UC_Register
 Customer -- UC_Login
 Customer -- UC_Checkout
 Customer -- UC_Track
@@ -68,10 +64,10 @@ end note
 
 legend right
   Quy ước
-  - Khách vãng lai: xem menu, chọn size/topping và dùng giỏ hàng
+  - Khách hàng xem menu, chọn size/topping và dùng giỏ hàng
     mà không cần đăng nhập.
-  - Khách hàng kế thừa Khách vãng lai; phải đăng nhập trước khi
-    đặt đơn, theo dõi, xem lịch sử và hủy đơn.
+  - Khách hàng phải đăng nhập trước khi đặt đơn, theo dõi,
+    xem lịch sử và hủy đơn.
   - Chỉ hủy được đơn đang Chờ thanh toán.
   - Nhân viên và quản lý dùng tài khoản được cấp, không tự đăng ký.
 endlegend
