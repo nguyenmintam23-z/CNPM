@@ -41,7 +41,7 @@ UC_Validate -[hidden]right- UC_Create
 UC_Create -[hidden]right- UC_Pay
 
 legend bottom
-  Ngoài phạm vi UC-01: xem menu, tùy chỉnh đồ uống, quản lý giỏ hàng, theo dõi đơn,
+  Ngoài phạm vi UC-01: xem menu, chọn size và topping, quản lý giỏ hàng, theo dõi đơn,
   hủy đơn chưa thanh toán, chuẩn bị món sau khi đơn được xác nhận, giao hàng tận nơi, hoàn tiền.
 endlegend
 
