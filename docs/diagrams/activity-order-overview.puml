@@ -1,0 +1,207 @@
+@startuml activity-order-overview
+title BREWLITE - BIỂU ĐỒ HOẠT ĐỘNG ĐẶT HÀNG TỔNG THỂ
+
+|Khách hàng|
+start
+:Mở ứng dụng BrewLite;
+
+if (Đã đăng nhập?) then (Có)
+else (Không)
+  if (Chọn thao tác?) then (Đăng nhập)
+    repeat
+      |Khách hàng|
+      :Nhập thông tin đăng nhập;
+      |Hệ thống|
+      :Xác thực tài khoản;
+      if (Đăng nhập thành công?) then (Có)
+        :Ghi nhận phiên đăng nhập hợp lệ;
+      else (Không)
+        |Khách hàng|
+        :Thông báo đăng nhập thất bại;
+      endif
+    repeat while (Đăng nhập thất bại\nvà muốn thử lại?) is (Có) not (Không)
+  else (Đăng ký)
+    repeat
+      |Khách hàng|
+      :Nhập thông tin đăng ký;
+      |Hệ thống|
+      :Kiểm tra thông tin và tạo tài khoản;
+      if (Đăng ký thành công?) then (Có)
+        :Ghi nhận tài khoản mới;
+      else (Không)
+        |Khách hàng|
+        :Thông báo đăng ký không thành công;
+      endif
+    repeat while (Đăng ký thất bại\nvà muốn thử lại?) is (Có) not (Không)
+
+    if (Đăng ký thành công?) then (Có)
+      |Khách hàng|
+      :Chuyển đến trang đăng nhập;
+    else (Không)
+      |Khách hàng|
+      :Bỏ dở đăng ký;
+      stop
+    endif
+    repeat
+      :Nhập thông tin đăng nhập;
+      |Hệ thống|
+      :Xác thực tài khoản;
+      if (Đăng nhập thành công?) then (Có)
+        :Ghi nhận phiên đăng nhập hợp lệ;
+      else (Không)
+        |Khách hàng|
+        :Thông báo đăng nhập thất bại;
+      endif
+    repeat while (Đăng nhập thất bại\nvà muốn thử lại?) is (Có) not (Không)
+  endif
+endif
+
+|Hệ thống|
+if (Có phiên đăng nhập hợp lệ?) then (Có)
+  |Khách hàng|
+  :Xem danh sách menu;
+  label CHON_SAN_PHAM
+  :Chọn đồ uống và xem chi tiết;
+  :Chọn size, topping và số lượng;
+
+  |Hệ thống|
+  :Kiểm tra sản phẩm và các lựa chọn;
+  if (Sản phẩm còn kinh doanh\nvà lựa chọn hợp lệ?) then (Có)
+    :Kiểm tra tồn kho theo số lượng đặt;
+    if (Đủ tồn kho?) then (Có)
+      |Khách hàng|
+      :Thêm sản phẩm vào giỏ hàng;
+      :Cập nhật giỏ hàng nếu cần;
+      :Chọn Đặt hàng;
+
+      |Hệ thống|
+      :Hiển thị biểu mẫu thông tin đặt hàng\nvà thông tin đơn dự kiến;
+
+      |Khách hàng|
+      :Kiểm tra thông tin đặt hàng;
+      :Xác nhận thông tin đặt hàng;
+
+      |Hệ thống|
+      :Kiểm tra các trường bắt buộc\nvà tính hợp lệ của dữ liệu;
+      if (Thông tin đặt hàng hợp lệ?) then (Có)
+        :Kiểm tra lại giỏ hàng và tồn kho;
+        if (Giỏ hàng còn hợp lệ\nvà đủ tồn kho?) then (Có)
+          :Thực hiện transaction tạo Order\nPENDING_PAYMENT và giữ tồn kho;
+          if (Transaction thành công?) then (Có)
+
+            repeat
+              |Khách hàng|
+              :Chọn Ví mô phỏng hoặc Thẻ mô phỏng;
+              :Yêu cầu thanh toán cho Order hiện tại;
+
+              |Hệ thống|
+              :Gửi yêu cầu thanh toán;
+              :Ghi nhận kết quả của lần thanh toán;
+
+              if (Payment = SUCCEEDED?) then (Có)
+                :Chốt tồn kho đã giữ;
+                :Chuyển Order sang CONFIRMED;
+              else (Không)
+                if (Payment = FAILED?) then (Có)
+                  :Giải phóng tồn kho đã giữ;
+                  :Giữ Order ở PENDING_PAYMENT;
+                  |Khách hàng|
+                  :Thông báo thanh toán thất bại;
+                  if (Muốn thanh toán lại?) then (Có)
+                    :Chọn thanh toán lại trên chính Order hiện tại;
+                    |Hệ thống|
+                    :Kiểm tra lại điều kiện thanh toán\nvà tồn kho trước lần thử lại;
+                    if (Có thể giữ lại tồn kho?) then (Có)
+                      :Giữ lại tồn kho cho lần thanh toán lại;
+                    else (Không)
+                      |Khách hàng|
+                      :Thông báo không đủ tồn kho để thanh toán lại;
+                      stop
+                    endif
+                    note right
+                      Khi thanh toán lại:
+                      - Giữ nguyên Order hiện tại.
+                      - Kiểm tra trạng thái Order.
+                      - Kiểm tra và giữ lại tồn kho an toàn.
+                      - Tạo Payment mới với khóa mới.
+                      - Không tạo Order thứ hai.
+                    end note
+                  else (Không)
+                    :Dừng quy trình thanh toán;
+                    stop
+                  endif
+                else (Không - PROCESSING)
+                  :Giữ Order ở PENDING_PAYMENT\nvà giữ tồn kho theo quy định;
+                  :Tiếp tục theo dõi/tra cứu kết quả\nbằng cùng khóa giao dịch;
+                  |Khách hàng|
+                  :Thông báo thanh toán đang được xử lý;
+                  :Chờ cập nhật kết quả thanh toán;
+                  stop
+                endif
+              endif
+            repeat while (Payment thất bại\nvà khách chọn thanh toán lại?) is (Có) not (Không)
+
+            |Hệ thống|
+            :Đưa Order đã CONFIRMED\nvào danh sách xử lý;
+
+            |Nhân viên|
+            :Xem đơn hàng đã xác nhận;
+            :Chuẩn bị đồ uống;
+            :Cập nhật trạng thái PREPARING;
+            :Cập nhật trạng thái READY;
+
+            |Khách hàng|
+            :Theo dõi trạng thái đơn hàng;
+            :Đến cửa hàng nhận đồ uống;
+
+            |Nhân viên|
+            :Xác nhận đã giao đồ uống;
+            :Cập nhật trạng thái COMPLETED;
+
+            |Khách hàng|
+            :Xem lịch sử đơn hàng;
+            stop
+
+          else (Không)
+            :Rollback transaction tạo Order\nvà thao tác giữ tồn kho;
+            |Khách hàng|
+            :Thông báo không thể tạo đơn;
+            :Giữ nguyên giỏ hàng để thử lại;
+            stop
+          endif
+        else (Không)
+          |Khách hàng|
+          :Thông báo giỏ hàng hoặc tồn kho\nkhông còn hợp lệ;
+          :Giữ giỏ hàng để điều chỉnh;
+          stop
+        endif
+      else (Không)
+        |Khách hàng|
+        :Thông báo dữ liệu không hợp lệ;
+        :Sửa thông tin đặt hàng;
+        stop
+      endif
+    else (Không)
+      |Hệ thống|
+      :Thông báo sản phẩm không đủ tồn kho;
+      :Không thêm sản phẩm vào giỏ hàng;
+      |Khách hàng|
+      :Chọn lại số lượng sản hoặc sản phẩm;
+      goto CHON_SAN_PHAM
+    endif
+  else (Không)
+    |Khách hàng|
+    :Thông báo sản phẩm hết hàng\nhoặc size/topping không hợp lệ;
+    :Không thêm sản phẩm vào giỏ hàng;
+    :Chọn lại sản phẩm hoặc tùy chọn;
+    goto CHON_SAN_PHAM
+  endif
+else (Không)
+  |Khách hàng|
+  :Thông báo chưa đăng nhập thành công;
+  :Không cho phép truy cập menu;
+  stop
+endif
+
+@enduml
+

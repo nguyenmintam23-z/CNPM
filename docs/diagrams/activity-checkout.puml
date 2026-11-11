@@ -1,0 +1,192 @@
+@startuml activity-checkout
+title BrewLite | Activity Diagram checkout (UC-01)
+skinparam defaultFontName "Segoe UI"
+skinparam shadowing false
+
+|Khách hàng|
+start
+:Bấm Đặt hàng tại giỏ;
+
+|Hệ thống BrewLite|
+:Kiểm tra JWT;
+if (Phiên hợp lệ?) then (Có)
+else (Không)
+  :Giữ giỏ, yêu cầu đăng nhập;
+  |Khách hàng|
+  :Đăng nhập hoặc dừng checkout;
+  |Hệ thống BrewLite|
+  if (Đăng nhập thành công?) then (Có)
+    :Khôi phục giỏ và kiểm tra JWT mới;
+  else (Không)
+    :Kết thúc checkout, không tạo đơn;
+    stop
+  endif
+endif
+if (Có quyền CUSTOMER?) then (Có)
+  :Hiển thị thông tin và tổng tạm tính;
+else (Không)
+  :Từ chối, không tạo đơn (E8);
+  stop
+endif
+
+|Khách hàng|
+:Xác nhận thông tin đặt đơn;
+|Hệ thống BrewLite|
+:Kiểm tra JWT và quyền trên yêu cầu tạo đơn;
+if (Được phép?) then (Có)
+else (Không)
+  :Từ chối và giữ giỏ\nYêu cầu đăng nhập lại nếu phiên hết hạn;
+  stop
+endif
+if (Cùng mã yêu cầu và nội dung\ncủa đơn đã tạo?) then (Có)
+  :Trả lại cùng mã đơn (E4);
+    note right
+    FR-18 / E4
+    Hai yêu cầu đồng thời của cùng khách,
+    cùng requestId và cùng nội dung
+    chỉ tạo một đơn và giữ tồn kho một lần.
+    Yêu cầu gửi trùng nhận cùng mã đơn.
+    Ràng buộc duy nhất theo khách và requestId
+    được kiểm tra trong transaction tạo đơn và giữ tồn.
+  end note
+else (Không)
+  :Kiểm tra các trường thông tin đặt hàng bắt buộc\nvà kiểm tra giỏ, size, topping, số lượng;
+  if (Thông tin đặt hàng và giỏ hợp lệ?) then (Có)
+    :Tính tổng tiền phía máy chủ;
+  else (Không)
+    :Báo trường thiếu hoặc sai và chỉ rõ dòng giỏ cần sửa nếu có\nGiữ giỏ, không tạo đơn (FR-22, E1);
+    |Khách hàng|
+    :Quay lại chỉnh sửa thông tin hoặc giỏ hàng;
+    stop
+  endif
+  |Hệ thống BrewLite|
+  :Bắt đầu transaction tạo đơn và giữ tồn;
+  if (Giữ được đủ tồn kho?) then (Có)
+    :Lưu đơn Chờ thanh toán với mã duy nhất;
+  else (Không)
+    :Hoàn tác, báo món hết hoặc thiếu, giữ giỏ (E2);
+    |Khách hàng|
+    :Quay lại giỏ;
+    stop
+  endif
+  |Hệ thống BrewLite|
+  if (Transaction thành công?) then (Có)
+    :Xác nhận đã tạo đơn và giữ tồn;
+  else (Không)
+    :Hoàn tác toàn bộ, báo lỗi, giữ giỏ (E3);
+    stop
+  endif
+endif
+:Hiển thị mã đơn, chi tiết, tổng tiền\nvà phương thức thanh toán;
+
+repeat
+  |Khách hàng|
+  :Chọn Ví hoặc Thẻ mô phỏng\nvà xác nhận thanh toán;
+  |Hệ thống BrewLite|
+  :Kiểm tra JWT, quyền và quyền sở hữu đơn;
+  if (Được phép?) then (Có)
+  else (Không)
+    :Từ chối yêu cầu, giữ đơn\nYêu cầu đăng nhập lại nếu phiên hết hạn;
+    stop
+  endif
+  if (Khóa thanh toán đã tồn tại?) then (Có)
+    :Đọc kết quả lần thanh toán hiện có (E7);
+        note right
+      FR-15 / E7
+      Hai yêu cầu đồng thời trên cùng đơn
+      với cùng idempotencyKey chỉ tạo một Payment
+      và chỉ xử lý một lần thanh toán.
+      Yêu cầu trùng nhận trạng thái hoặc
+      kết quả của Payment hiện có.
+    end note
+    if (Kết quả cuối đã được lưu?) then (Có)
+      :Trả kết quả đã lưu và trạng thái đơn hiện tại;
+      stop
+    else (Chưa)
+      :Tiếp tục theo dõi lần thanh toán Đang xử lý\nbằng cùng khóa;
+    endif
+  else (Không)
+    :Bắt đầu transaction và khóa Order;
+    :Tra cứu lại Payment theo idempotencyKey;
+    if (Khóa thanh toán đã tồn tại?) then (Có)
+      :Kết thúc transaction và trả trạng thái\nhoặc kết quả của Payment hiện có (E7);
+      stop
+    endif
+
+    if (Đơn còn Chờ thanh toán\nvà chưa có lần thanh toán Đang xử lý?) then (Có)
+    else (Không)
+      :Rollback transaction và trả trạng thái hiện tại của đơn;
+      stop
+    endif
+
+    if (Đây là lần thử lại sau Thất bại?) then (Có)
+      :Khóa các bản ghi tồn kho cần giữ;
+      if (Đủ tồn có thể bán?) then (Có)
+        :Giữ lại tồn cho cùng đơn;
+      else (Không)
+        :Rollback transaction;
+        :Báo món hết hoặc thiếu hàng (E5)\nĐơn vẫn Chờ thanh toán;
+        stop
+      endif
+    else (Lần đầu)
+      if (Tồn kho đã giữ còn hợp lệ?) then (Có)
+      else (Không)
+        :Rollback transaction và báo thiếu tồn;
+        stop
+      endif
+    endif
+
+    :Tạo Payment Đang xử lý với khóa của lần này;
+      note right
+      FR-15 / E7
+      UNIQUE (orderId, idempotencyKey).
+      Sau khi khóa Order, tra cứu lại Payment theo cùng khóa.
+      Nếu Payment đã tồn tại, trả trạng thái hoặc kết quả đã lưu.
+      Chỉ yêu cầu tạo Payment mới thành công mới gọi dịch vụ
+      thanh toán mô phỏng sau khi commit.
+    end note
+    :Commit transaction;
+    |Dịch vụ thanh toán mô phỏng|
+    :Xử lý Ví hoặc Thẻ theo khóa;
+    |Hệ thống BrewLite|
+    :Nhận kết quả nếu có;
+  endif
+  while (Chưa xác định được kết quả?) is (Có)
+    :Hiển thị Đang xử lý\nĐơn vẫn Chờ thanh toán (E6);
+    if (Tiếp tục kiểm tra kết quả?) then (Có)
+    else (Không)
+      :Rời màn hình, lần thanh toán vẫn Đang xử lý;
+      stop
+    endif
+    :Tra cứu kết quả của Payment đang Đang xử lý\nbằng cùng idempotencyKey;
+    |Dịch vụ thanh toán mô phỏng|
+    :Trả trạng thái của lần thanh toán đó;
+    |Hệ thống BrewLite|
+  endwhile (Không)
+  :Bắt đầu transaction và khóa bản ghi lần thanh toán;
+  if (Kết quả cuối đã được áp dụng?) then (Có)
+    :Kết thúc transaction và trả kết quả đã lưu;
+    stop
+  endif
+  if (Thanh toán thành công?) then (Có)
+    :Ghi Thành công, chốt tồn và xác nhận đơn;
+    :Commit transaction;
+    :Đơn Đã xác nhận xuất hiện trong danh sách xử lý của nhân viên;
+    :Hiển thị xác nhận và mã đơn;
+    stop
+  else (Thất bại)
+    :Ghi Thất bại và giải phóng tồn đã giữ\nĐơn vẫn Chờ thanh toán, giữ nguyên mã;
+    :Commit transaction;
+    :Báo thất bại và cho phép thử lại;
+  endif
+  |Khách hàng|
+  if (Thử thanh toán lại?) then (Có)
+    |Hệ thống BrewLite|
+        :Chuẩn bị khóa mới cho lần thử lại trên cùng đơn;
+  else (Không)
+    :Rời checkout, đơn vẫn Chờ thanh toán;
+    stop
+  endif
+repeat while (Bắt đầu lần thanh toán mới) is (Tiếp tục) not (Dừng)
+stop
+@enduml

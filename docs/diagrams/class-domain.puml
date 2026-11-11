@@ -1,0 +1,175 @@
+@startuml
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+skinparam nodesep 35
+skinparam ranksep 45
+hide empty methods
+
+title Class diagram mức domain - BrewLite
+
+' Chú thích tiếng Việt viết sau dấu // (màu xám), không ảnh hưởng tên dùng trong code.
+
+' ===== Enum trạng thái =====
+enum "UserRole (Vai trò)" as UserRole {
+  CUSTOMER <color:#666666>// Khách hàng</color>
+  STAFF <color:#666666>// Nhân viên quầy</color>
+  MANAGER <color:#666666>// Quản lý</color>
+}
+
+enum "OrderStatus (Trạng thái đơn)" as OrderStatus {
+  PENDING_PAYMENT <color:#666666>// Chờ thanh toán</color>
+  CONFIRMED <color:#666666>// Đã xác nhận</color>
+  PREPARING <color:#666666>// Đang chuẩn bị</color>
+  READY <color:#666666>// Sẵn sàng nhận</color>
+  COMPLETED <color:#666666>// Hoàn tất</color>
+  CANCELLED <color:#666666>// Đã hủy</color>
+}
+
+enum "PaymentStatus (Trạng thái thanh toán)" as PaymentStatus {
+  PROCESSING <color:#666666>// Đang xử lý</color>
+  SUCCEEDED <color:#666666>// Thành công</color>
+  FAILED <color:#666666>// Thất bại</color>
+}
+
+enum "PaymentMethod (Phương thức)" as PaymentMethod {
+  WALLET <color:#666666>// Ví mô phỏng</color>
+  CARD <color:#666666>// Thẻ mô phỏng</color>
+}
+
+enum "StockHoldStatus (Trạng thái giữ tồn kho)" as StockHoldStatus {
+  HELD <color:#666666>// Đang giữ</color>
+  COMMITTED <color:#666666>// Đã chốt</color>
+  RELEASED <color:#666666>// Đã giải phóng</color>
+}
+
+enum "LoyaltyType (Loại điểm)" as LoyaltyType {
+  EARN <color:#666666>// Cộng điểm</color>
+  REDEEM <color:#666666>// Dùng điểm</color>
+}
+
+' ===== Lớp domain =====
+class "User (Người dùng)" as User {
+  - id: UUID <color:#666666>// mã người dùng</color>
+  - email: String {unique} <color:#666666>// email đăng nhập</color>
+  - passwordHash: String <color:#666666>// mật khẩu đã băm</color>
+  - fullName: String <color:#666666>// họ tên</color>
+  - role: UserRole <color:#666666>// vai trò</color>
+  - createdAt: DateTime <color:#666666>// ngày tạo</color>
+}
+
+class "Product (Đồ uống)" as Product {
+  - id: UUID <color:#666666>// mã món</color>
+  - name: String <color:#666666>// tên món</color>
+  - description: String <color:#666666>// mô tả</color>
+  - basePrice: Decimal <color:#666666>// giá gốc</color>
+  - imageUrl: String [0..1] <color:#666666>// ảnh</color>
+  - isActive: Boolean <color:#666666>// còn kinh doanh</color>
+  - stockQuantity: Integer <color:#666666>// số lượng tồn</color>
+  - reservedQuantity: Integer <color:#666666>// số lượng đang giữ</color>
+  - /availableQuantity: Integer <color:#666666>// số lượng còn bán được</color>
+}
+
+class "Size (Kích cỡ)" as Size {
+  - id: UUID <color:#666666>// mã size</color>
+  - name: String <color:#666666>// tên size</color>
+  - extraPrice: Decimal <color:#666666>// giá cộng thêm</color>
+}
+
+class "Topping" as Topping {
+  - id: UUID <color:#666666>// mã topping</color>
+  - name: String <color:#666666>// tên topping</color>
+  - price: Decimal <color:#666666>// giá</color>
+  - isActive: Boolean <color:#666666>// còn bán</color>
+}
+
+class "Order (Đơn hàng)" as Order {
+  - id: UUID <color:#666666>// khóa chính</color>
+  - orderCode: String {unique} <color:#666666>// mã đơn</color>
+  - requestId: String {unique} <color:#666666>// mã yêu cầu đặt đơn</color>
+  - status: OrderStatus <color:#666666>// trạng thái đơn</color>
+  - stockHoldStatus: StockHoldStatus <color:#666666>// trạng thái giữ tồn kho</color>
+  - totalAmount: Decimal <color:#666666>// tổng tiền</color>
+  - createdAt: DateTime <color:#666666>// thời điểm tạo</color>
+  - updatedAt: DateTime <color:#666666>// thời điểm cập nhật</color>
+}
+
+class "OrderItem (Dòng món)" as OrderItem {
+  - id: UUID <color:#666666>// mã dòng món</color>
+  - quantity: Integer <color:#666666>// số lượng</color>
+  - sizePrice: Decimal <color:#666666>// giá size lúc đặt</color>
+  - unitPrice: Decimal <color:#666666>// đơn giá lúc đặt</color>
+  - lineTotal: Decimal <color:#666666>// thành tiền</color>
+}
+
+class "OrderItemTopping (Topping đã chọn)" as OrderItemTopping {
+  - id: UUID <color:#666666>// mã dòng topping</color>
+  - price: Decimal <color:#666666>// giá topping lúc đặt</color>
+}
+
+class "Payment (Lần thanh toán)" as Payment {
+  - id: UUID <color:#666666>// mã lần thanh toán</color>
+  - method: PaymentMethod <color:#666666>// phương thức</color>
+  - status: PaymentStatus <color:#666666>// trạng thái</color>
+  - amount: Decimal <color:#666666>// số tiền</color>
+  - idempotencyKey: String {unique} <color:#666666>// khóa chống xử lý trùng</color>
+  - createdAt: DateTime <color:#666666>// thời điểm gửi</color>
+  - completedAt: DateTime [0..1] <color:#666666>// thời điểm có kết quả</color>
+}
+
+class "Promotion (Khuyến mãi)" as Promotion <<phạm vi mở rộng>> #F2F2F2 {
+  - id: UUID <color:#666666>// mã khuyến mãi</color>
+  - code: String {unique} <color:#666666>// mã giảm giá</color>
+  - description: String <color:#666666>// mô tả</color>
+  - discountPercent: Decimal <color:#666666>// phần trăm giảm</color>
+  - startDate: Date <color:#666666>// ngày bắt đầu</color>
+  - endDate: Date <color:#666666>// ngày kết thúc</color>
+  - isActive: Boolean <color:#666666>// còn hiệu lực</color>
+}
+
+class "LoyaltyTransaction (Giao dịch điểm)" as LoyaltyTransaction <<phạm vi mở rộng>> #F2F2F2 {
+  - id: UUID <color:#666666>// mã giao dịch</color>
+  - type: LoyaltyType <color:#666666>// cộng hay dùng điểm</color>
+  - points: Integer <color:#666666>// số điểm</color>
+  - createdAt: DateTime <color:#666666>// thời điểm</color>
+}
+
+' ===== Quan hệ (hướng mũi tên dùng để xếp chỗ cho gọn) =====
+User "1" -right- "0..*" Order : đặt >
+User "1" -down- "0..*" LoyaltyTransaction : có >
+Order "0..1" -left- "0..*" LoyaltyTransaction : phát sinh >
+Order "1" -right- "0..*" Payment : lần thanh toán >
+Order "0..*" -up-> "0..1" Promotion : áp dụng
+Order "1" *-down- "1..*" OrderItem : gồm >
+OrderItem "0..*" -right-> "1" Product : món
+OrderItem "0..*" -down-> "0..1" Size : size đã chọn
+OrderItem "1" *-down- "0..*" OrderItemTopping : gồm >
+OrderItemTopping "0..*" -down-> "1" Topping : topping
+Product "0..*" -down- "0..*" Size : cho phép >
+Product "0..*" -down- "0..*" Topping : cho phép >
+
+' ===== Xếp enum thành cụm cạnh Payment =====
+PaymentStatus -[hidden]right- PaymentMethod
+Payment -[hidden]down- PaymentStatus
+PaymentStatus -[hidden]down- OrderStatus
+PaymentMethod -[hidden]down- StockHoldStatus
+OrderStatus -[hidden]right- StockHoldStatus
+LoyaltyTransaction -[hidden]down- LoyaltyType
+LoyaltyType -[hidden]right- UserRole
+
+legend bottom
+  Quy tắc chính:
+  - Product: availableQuantity = stockQuantity - reservedQuantity; tồn kho nạp từ seed, bằng 0 thì báo hết hàng (FR-01, FR-13).
+  - Order: requestId chống tạo đơn trùng (FR-18); stockHoldStatus giữ khi tạo đơn, chốt khi thanh toán thành công,
+    giải phóng khi thanh toán thất bại hoặc hủy đơn, mỗi việc chỉ một lần (FR-14, FR-15, FR-23).
+  - Thanh toán lại sau thất bại: kiểm tra và giữ lại tồn kho (RELEASED → HELD) trước khi thanh toán;
+    không đủ hàng thì từ chối, đơn vẫn PENDING_PAYMENT (FR-13, FR-14).
+  - Payment: mỗi lần thử thanh toán là một Payment (FR-14); gửi lại cùng idempotencyKey không xử lý trùng (FR-15).
+  - OrderItem và OrderItemTopping lưu giá tại thời điểm tạo đơn (sizePrice, unitPrice, price);
+    đổi giá Size, Topping, Product sau này không làm thay đổi đơn cũ.
+  - Size dùng chung cho cả cửa hàng (ví dụ S, M, L), giá cộng thêm giống nhau; mỗi món cho phép một số size.
+  - Chữ xám sau dấu // là chú thích tiếng Việt; tên tiếng Anh là tên dùng trong code.
+  - <<phạm vi mở rộng>>: có trong mô hình domain, không hiện thực trong MVP.
+endlegend
+
+@enduml

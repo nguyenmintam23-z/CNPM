@@ -1,0 +1,377 @@
+@startuml
+ title BrewLite - UC-01 Đặt và thanh toán đơn hàng (Sequence)
+ autonumber
+ hide footbox
+ skinparam backgroundColor #FFFFFF
+ skinparam sequence {
+   ArrowColor #344054
+   LifeLineBorderColor #667085
+   LifeLineBackgroundColor #F8FAFC
+   ParticipantBorderColor #475467
+   ParticipantBackgroundColor #EAF2FF
+   ActorBorderColor #475467
+   ActorBackgroundColor #F2F4F7
+   BoxBorderColor #98A2B3
+   GroupBorderColor #98A2B3
+   GroupBackgroundColor #F8FAFC
+   NoteBackgroundColor #FFF8E7
+   NoteBorderColor #D6A84F
+   MessageAlign center
+ }
+ actor Customer
+ participant "Next.js UI" as UI
+ participant "NestJS API" as API
+ database "Database" as DB
+ participant "Payment Service\n(mô phỏng)" as PS
+
+ note over Customer,PS
+ Tiền điều kiện (UC-01): khách đã đăng nhập với vai trò CUSTOMER và giỏ hàng có ít nhất một món.
+ Phiên (JWT) có thể hết hạn trong lúc checkout nên vẫn được kiểm tra lại (A1, FR-12).
+ Customer chỉ được thao tác trên đơn thuộc tài khoản của mình.
+ end note
+
+ == 1. Kiểm tra phiên và xác nhận thông tin đơn ==
+ Customer -> UI: Chọn Đặt hàng tại giỏ
+ UI -> API: Kiểm tra phiên / tải thông tin checkout (JWT)
+ API -> API: Verify JWT và role=CUSTOMER
+ alt 401 - JWT thiếu / hết hạn / không hợp lệ
+   API --> UI: 401 Unauthorized
+   UI --> Customer: Giữ giỏ, yêu cầu đăng nhập lại (A1)
+   alt Khách đăng nhập lại
+     Customer -> UI: Nhập thông tin đăng nhập
+     UI -> API: POST /auth/login
+     API -> DB: Kiểm tra tài khoản và mật khẩu đã băm
+     DB --> API: Kết quả kiểm tra
+     alt Đăng nhập lại thành công
+       API --> UI: 200 + JWT mới
+       UI -> API: Kiểm tra lại phiên (JWT mới)
+       API -> API: Verify JWT và role=CUSTOMER
+       alt role=CUSTOMER
+         API --> UI: Checkout preview
+         UI --> Customer: Giỏ giữ nguyên; hiển thị món, tùy chọn, số lượng, tổng tạm tính
+       else Tài khoản không phải CUSTOMER (E8)
+         API --> UI: 403 Forbidden
+         UI --> Customer: Báo không đủ quyền; không tạo đơn
+         break Không có quyền CUSTOMER
+         end
+       end
+     else Đăng nhập lại thất bại (A1.3)
+       API --> UI: 401 - sai thông tin đăng nhập
+       UI --> Customer: Báo đăng nhập thất bại; giữ giỏ; không tạo đơn
+       break Kết thúc checkout
+       end
+     end
+   else Khách bỏ dở đăng nhập (A1.3)
+     UI --> Customer: Giữ giỏ; kết thúc checkout, không tạo đơn
+     break Khách bỏ dở
+     end
+   end
+ else 403 - sai vai trò (E8)
+   API --> UI: 403 Forbidden
+   UI --> Customer: Báo không đủ quyền; kết thúc checkout
+   break Không có quyền CUSTOMER
+   end
+ else Phiên hợp lệ và role=CUSTOMER
+   API --> UI: Checkout preview
+   UI --> Customer: Hiển thị món, tùy chọn, số lượng, tổng tạm tính
+ end
+
+ == 2. Xác nhận đặt đơn và chống tạo đơn trùng (E4) ==
+ Customer -> UI: Xác nhận đặt đơn
+ UI -> API: POST /orders/checkout\nJWT + requestId + cart snapshot
+ API -> API: Verify JWT và role=CUSTOMER lần nữa
+ alt 401 - phiên hết hạn tại thời điểm xác nhận
+   API --> UI: 401 Unauthorized
+   UI --> Customer: Giữ giỏ, yêu cầu đăng nhập lại
+   note over UI,API
+   Không tạo Order / Payment và không thay đổi tồn kho.
+   Sau đăng nhập, khách quay lại xác nhận; dùng lại requestId
+   của cùng một lần xác nhận nếu request chưa được xử lý.
+   end note
+   break Checkout bị dừng do phiên hết hạn
+   end
+ else 403 - sai vai trò (E8)
+   API --> UI: 403 Forbidden
+   UI --> Customer: Báo không đủ quyền; không tạo đơn
+   break Checkout bị từ chối
+   end
+ else Phiên hợp lệ
+   API -> DB: Tra cứu Order theo requestId của khách hiện tại (FR-18)
+   DB --> API: Kết quả tra cứu
+   note right of DB
+     FR-18: requestId nhận diện một lần xác nhận đặt đơn.
+     UI tạo requestId mới cho mỗi lần khách bấm xác nhận
+     và chỉ dùng lại khi gửi lại chính lần đó (mất phản hồi).
+   end note
+   alt requestId đã tồn tại - gửi lại cùng lần xác nhận (E4)
+     API --> UI: Trả lại orderCode và thông tin đơn cũ
+     UI --> Customer: Hiển thị đơn hiện có
+   else requestId chưa có
+     API -> API: Validate thông tin đặt hàng bắt buộc (FR-22); món còn kinh doanh;\ngiỏ, size, topping, quantity (FR-04, FR-13)
+     API -> API: Tính tổng tiền từ dữ liệu phía máy chủ
+     alt Thiếu thông tin bắt buộc / giỏ trống / tùy chọn sai / quantity không hợp lệ (E1)
+       API --> UI: 400 - chỉ rõ dòng cần sửa
+       UI --> Customer: Hiển thị lỗi, giữ giỏ và lựa chọn
+       break Dữ liệu checkout không hợp lệ
+       end
+     else Dữ liệu hợp lệ
+       API -> DB: BEGIN TRANSACTION
+       API -> DB: Khóa dòng Product và kiểm tra availableQuantity
+       DB --> API: Kết quả kiểm tra tồn kho
+       alt Thiếu hàng / hết hàng (E2)
+         API -> DB: ROLLBACK
+         API --> UI: 409 - sản phẩm không đủ tồn kho
+         UI --> Customer: Chỉ rõ món cần sửa, giữ giỏ
+         break Không tạo đơn khi thiếu hàng
+         end
+       else Đủ hàng
+         API -> DB: INSERT Order (PENDING_PAYMENT, requestId, totalAmount,\nstockHoldStatus=HELD)
+         note right of DB
+           Order.requestId có ràng buộc UNIQUE.
+           Hai request cùng requestId gửi đồng thời:
+           chỉ một INSERT thành công (FR-18).
+         end note
+         API -> DB: INSERT OrderItem(s)
+         API -> DB: Giữ tồn kho (reservedQuantity tăng)
+         alt Vi phạm UNIQUE requestId - request trùng đến đồng thời (E4, FR-18)
+           API -> DB: ROLLBACK (không tạo đơn thứ hai, không giữ tồn lần hai)
+           API -> DB: Đọc Order theo requestId
+           DB --> API: Order do request đầu tiên tạo
+           API --> UI: Trả lại cùng orderCode và thông tin đơn
+           UI --> Customer: Hiển thị đơn hiện có
+         else Lỗi lưu Order / OrderItem / giữ tồn (E3, FR-16)
+           API -> DB: ROLLBACK toàn bộ transaction
+           DB --> API: Không có Order lưu dở; tồn kho như trước
+           API --> UI: 500 - không thể tạo đơn
+           UI --> Customer: Báo lỗi, giữ giỏ để thử lại
+           break Tạo đơn thất bại
+           end
+         else Ghi đơn và giữ tồn thành công
+           API -> DB: COMMIT TRANSACTION
+           DB --> API: orderCode + order summary + stockHoldStatus=HELD
+           API --> UI: Order PENDING_PAYMENT + order summary
+           UI --> Customer: Hiển thị mã đơn, món, tùy chọn, số lượng, tổng tiền\nvà phương thức Ví mô phỏng / Thẻ mô phỏng
+         end
+       end
+     end
+   end
+ end
+
+ == 3. Thanh toán đơn hiện có / đơn mới ==
+ loop Mỗi lần thử thanh toán cho đến khi thành công hoặc khách dừng
+   Customer -> UI: Chọn Ví / Thẻ mô phỏng và xác nhận
+   UI -> API: POST /orders/{id}/payments\nJWT + method + idempotencyKey K
+   API -> API: Verify JWT và role=CUSTOMER
+   alt 401 - JWT hết hạn khi thanh toán
+     API --> UI: 401 Unauthorized
+     UI --> Customer: Giữ đơn hiện có; yêu cầu đăng nhập lại
+     break Phiên hết hạn - không tạo Payment mới
+     end
+   else 403 - sai vai trò CUSTOMER
+     API --> UI: 403 Forbidden
+     UI --> Customer: Báo không đủ quyền thanh toán
+     break Không có quyền CUSTOMER
+     end
+   else Phiên hợp lệ và role=CUSTOMER
+     API -> API: Validate method ∈ {WALLET, CARD} (FR-07)
+     alt method không hợp lệ
+       API --> UI: 400 - phương thức thanh toán không hợp lệ
+       UI --> Customer: Báo chọn lại Ví mô phỏng hoặc Thẻ mô phỏng
+       break Không tạo Payment
+       end
+     end
+     API -> DB: Đọc Order (owner, status, stockHoldStatus)
+     DB --> API: Thông tin Order
+     alt Order không thuộc khách
+       API --> UI: 403 Forbidden
+       UI --> Customer: Từ chối truy cập đơn hàng
+       break Không có quyền sở hữu đơn
+       end
+     else Order thuộc khách
+       API -> DB: Tra cứu Payment theo idempotencyKey K của Order này\n(trước khi xét trạng thái đơn)
+       DB --> API: Payment của K (nếu có)
+       alt K đã tồn tại - gửi lại do timeout / mất phản hồi (E6, E7, FR-15)
+         note over API,DB
+         Trả kết quả của đúng lần thanh toán K, kể cả khi Order đã CONFIRMED.
+         Không tạo Payment mới, không chốt hoặc giải phóng tồn kho lần hai.
+         end note
+         alt Payment K vẫn PROCESSING
+           API -> PS: Tra cứu kết quả theo cùng K
+           PS --> API: PROCESSING / SUCCEEDED / FAILED
+           alt Payment Service vẫn PROCESSING
+             API --> UI: PROCESSING
+             UI --> Customer: Hiển thị Đang xử lý
+           else Payment Service trả SUCCEEDED
+             API -> DB: BEGIN TRANSACTION
+             API -> DB: Nếu Payment K còn PROCESSING: Payment=SUCCEEDED,\nstockHoldStatus=COMMITTED, Order=CONFIRMED (vào danh sách nhân viên);\nProduct: stockQuantity giảm, reservedQuantity giảm
+             API -> DB: COMMIT TRANSACTION
+             API --> UI: SUCCEEDED + orderCode
+             UI --> Customer: Hiển thị mã đơn và đơn đã xác nhận
+           else Payment Service trả FAILED
+             API -> DB: BEGIN TRANSACTION
+             API -> DB: Nếu Payment K còn PROCESSING và stockHoldStatus=HELD:\nPayment=FAILED, stockHoldStatus=RELEASED;\nProduct: reservedQuantity giảm
+             API -> DB: COMMIT TRANSACTION
+             API --> UI: FAILED + orderCode
+             UI --> Customer: Báo thất bại; cho phép thử lại
+           end
+           break Không tạo lần thanh toán trùng
+           end
+         else Payment K đã có kết quả cuối (SUCCEEDED / FAILED)
+           API --> UI: Trả kết quả đã lưu của K + orderCode
+           UI --> Customer: Hiển thị kết quả cũ; không xử lý lại
+           break Không tạo lần thanh toán trùng
+           end
+         end
+       else K mới
+       alt Order không còn PENDING_PAYMENT
+         API --> UI: 409 - đơn không ở trạng thái chờ thanh toán
+         UI --> Customer: Báo đơn không thể thanh toán
+         break Order không đủ điều kiện
+         end
+       else Order đang PENDING_PAYMENT
+         API -> DB: BEGIN TRANSACTION
+         API -> DB: Khóa dòng Order; kiểm tra lại trạng thái đơn\nvà Payment đang PROCESSING
+         note right of DB
+           FR-23: bắt đầu thanh toán và hủy đơn cùng khóa
+           dòng Order; nếu gửi đồng thời thì chỉ một thao tác
+           được chấp nhận. Giữ lại tồn kho và tạo Payment
+           nằm trong cùng transaction này.
+         end note
+         DB --> API: Trạng thái Order, stockHoldStatus, Payment đang PROCESSING
+         alt Order không còn PENDING_PAYMENT (ví dụ đã CANCELLED do hủy đồng thời - FR-23, FR-24)
+           API -> DB: ROLLBACK (không INSERT Payment)
+           API --> UI: 409 - đơn đã hủy hoặc không còn chờ thanh toán
+           UI --> Customer: Báo đơn không thể thanh toán
+           break Không tạo Payment
+           end
+         else Có Payment khác đang PROCESSING cho Order
+           API -> DB: ROLLBACK
+           API --> UI: 409 - thanh toán đang xử lý
+           UI --> Customer: Chờ kết quả lần hiện tại; không tạo lần mới
+           break Đang có Payment xử lý
+           end
+         else Order PENDING_PAYMENT, không có Payment PROCESSING
+           alt stockHoldStatus đang HELD (lần đầu thanh toán)
+             note over API,DB
+             Dùng phần tồn đã giữ khi tạo Order.
+             end note
+           else stockHoldStatus đã RELEASED (thử lại sau FAILED)
+             API -> DB: Khóa dòng Product, kiểm tra availableQuantity
+             DB --> API: Kết quả kiểm tra tồn
+             alt Hết / thiếu hàng khi thử lại (E5)
+               API -> DB: ROLLBACK
+               API --> UI: 409 - hết hàng; không tạo Payment
+               UI --> Customer: Đơn vẫn PENDING_PAYMENT; báo món hết
+               break Không bắt đầu lần thử mới
+               end
+             else Đủ hàng
+               API -> DB: Product: reservedQuantity tăng; stockHoldStatus=HELD
+             end
+           else stockHoldStatus không hợp lệ
+             API -> DB: ROLLBACK
+             API --> UI: 409 - tồn kho không ở trạng thái có thể thanh toán
+             UI --> Customer: Báo không thể thanh toán
+             break stockHoldStatus không hợp lệ
+             end
+           end
+
+           API -> DB: INSERT Payment (PROCESSING, method, idempotencyKey K,\namount = Order.totalAmount)
+           note right of DB
+             Payment.idempotencyKey có ràng buộc UNIQUE:
+             hai yêu cầu cùng K gửi đồng thời chỉ một
+             INSERT thành công (FR-15).
+           end note
+           alt Vi phạm UNIQUE idempotencyKey - yêu cầu cùng K đến đồng thời (E7, FR-15)
+             API -> DB: ROLLBACK (hoàn tác cả phần giữ lại tồn của yêu cầu này)
+             API -> DB: Đọc Payment theo K
+             DB --> API: Payment do yêu cầu đầu tiên tạo
+             API --> UI: Kết quả hiện tại của K (PROCESSING hoặc kết quả cuối)
+             UI --> Customer: Hiển thị Đang xử lý hoặc kết quả; không xử lý lại
+             break Chỉ một Payment được tạo và xử lý cho khóa K
+             end
+           end
+           API -> DB: COMMIT TRANSACTION (giữ tồn và Payment cùng lúc)
+           DB --> API: Payment attempt đã ghi nhận
+           API -> PS: Process payment(order, amount, method, K)
+           note over API,DB
+           Nếu ghi Database lỗi sau khi Payment Service đã trả kết quả:
+           Payment vẫn PROCESSING; lần gửi lại / tra cứu bằng cùng K
+           (nhánh "K đã tồn tại") sẽ áp dụng kết quả đúng một lần (FR-15).
+           end note
+           alt Payment Service trả SUCCEEDED
+             PS --> API: SUCCEEDED
+             API -> DB: BEGIN TRANSACTION
+             API -> DB: Chỉ áp dụng nếu Payment còn PROCESSING
+             API -> DB: Payment=SUCCEEDED; stockHoldStatus=COMMITTED; Order=CONFIRMED
+             API -> DB: Product: stockQuantity giảm, reservedQuantity giảm (chốt tồn)
+             API -> DB: COMMIT TRANSACTION
+             DB --> API: Kết quả cuối đã áp dụng
+             note right of DB
+               Order CONFIRMED xuất hiện trong
+               danh sách xử lý của nhân viên (FR-07, FR-09).
+             end note
+             API --> UI: SUCCEEDED + orderCode
+             UI --> Customer: Hiển thị mã đơn và đơn đã xác nhận
+             break Thanh toán thành công
+             end
+           else Payment Service trả FAILED
+             PS --> API: FAILED
+             API -> DB: BEGIN TRANSACTION
+             API -> DB: Chỉ áp dụng nếu Payment còn PROCESSING và stockHoldStatus=HELD
+             API -> DB: Payment=FAILED; stockHoldStatus=RELEASED
+             API -> DB: Product: reservedQuantity giảm (giải phóng tồn)
+             note right of DB
+               Order giữ nguyên orderCode
+               và trạng thái PENDING_PAYMENT.
+               Giải phóng tồn đúng một lần.
+             end note
+             API -> DB: COMMIT TRANSACTION
+             DB --> API: Kết quả thất bại đã áp dụng
+             API --> UI: FAILED + cùng orderCode
+             UI --> Customer: Báo thất bại; cho phép thử lại / hủy đơn
+           else Timeout / mất kết nối, chưa rõ kết quả (E6)
+             note over API,PS
+             Không kết luận FAILED và không giải phóng tồn ở thời điểm timeout.
+             Giữ Payment PROCESSING, stockHoldStatus HELD.
+             end note
+             API -> PS: Tra cứu / gửi lại cùng idempotencyKey K
+             PS --> API: PROCESSING / SUCCEEDED / FAILED
+             alt Vẫn PROCESSING
+               API --> UI: PROCESSING
+               UI --> Customer: Hiển thị Đang xử lý; tra cứu lại bằng cùng K
+             else Kết quả cuối SUCCEEDED
+               API -> DB: BEGIN TRANSACTION
+               API -> DB: Nếu Payment còn PROCESSING: SUCCEEDED, COMMITTED, Order CONFIRMED\n(vào danh sách xử lý của nhân viên); Product: stockQuantity giảm, reservedQuantity giảm
+               API -> DB: Nếu đã áp dụng kết quả: không cập nhật lần hai
+               API -> DB: COMMIT TRANSACTION
+               API --> UI: SUCCEEDED + orderCode
+               UI --> Customer: Hiển thị mã đơn và đơn đã xác nhận
+               break Kết quả cuối thành công
+               end
+             else Kết quả cuối FAILED
+               API -> DB: BEGIN TRANSACTION
+               API -> DB: Nếu Payment còn PROCESSING và stockHoldStatus=HELD: FAILED, RELEASED;\nProduct: reservedQuantity giảm
+               API -> DB: Nếu đã áp dụng kết quả: không giải phóng lần hai
+               API -> DB: COMMIT TRANSACTION
+               API --> UI: FAILED + orderCode
+               UI --> Customer: Báo thất bại; cho phép thử lại
+             end
+           end
+         end
+       end
+       end
+     end
+   end
+ end
+
+ note over API,DB
+ Quy tắc nhất quán:
+ - Thanh toán kiểm tra theo thứ tự: quyền sở hữu đơn → idempotencyKey K →
+   trạng thái PENDING_PAYMENT, để gửi lại sau khi đã thành công vẫn nhận kết quả cũ (E7/FR-15).
+ - Mỗi lần thử chủ động mới sau FAILED dùng idempotencyKey mới.
+ - Gửi lại do timeout dùng lại đúng khóa K của lần đang xử lý (E6/E7).
+ - Chỉ áp dụng kết quả cuối khi Payment còn PROCESSING; chốt/giải phóng
+   stockHoldStatus đúng một lần, không cập nhật tồn kho lặp.
+ - Tạo Order + OrderItem + giữ tồn là một transaction (E3/FR-16).
+ end note
+ @enduml

@@ -1,0 +1,126 @@
+@startuml
+
+title BrewLite - Activity Diagram - Khách hàng: Menu và giỏ hàng
+skinparam shadowing false
+
+|Khách hàng|
+start
+:Truy cập BrewLite;
+
+|Hệ thống|
+if (Phiên đăng nhập hợp lệ?) then (Có)
+  :Cho phép truy cập menu;
+else (Không)
+  :Hiển thị trang đăng nhập / đăng ký;
+  |Khách hàng|
+  while (Chưa đăng nhập và muốn tiếp tục?) is (Có)
+    if (Có tài khoản?) then (Có)
+      :Nhập thông tin đăng nhập;
+      |Hệ thống|
+      :Xác thực tài khoản;
+      if (Đăng nhập thành công?) then (Có)
+        :Ghi nhận phiên đăng nhập hợp lệ;
+      else (Không)
+        :Thông báo đăng nhập thất bại;
+      endif
+    else (Không)
+      :Nhập thông tin đăng ký;
+      |Hệ thống|
+      :Kiểm tra thông tin đăng ký;
+      if (Đăng ký hợp lệ?) then (Có)
+        :Tạo tài khoản;
+        :Thông báo đăng ký thành công;
+        :Yêu cầu đăng nhập;
+      else (Không)
+        :Thông báo đăng ký không hợp lệ;
+      endif
+    endif
+    |Khách hàng|
+  endwhile (Không / bỏ dở hoặc đã đăng nhập)
+  |Hệ thống|
+  if (Đã đăng nhập hợp lệ?) then (Có)
+    :Cho phép truy cập menu;
+  else (Không)
+    :Kết thúc do khách hàng bỏ dở;
+    stop
+  endif
+endif
+
+:Tải danh sách đồ uống;
+:Hiển thị menu và nhãn hết hàng;
+
+|Khách hàng|
+repeat
+  :Xem menu và chọn thao tác;
+  if (Chọn sản phẩm?) then (Có)
+    :Chọn đồ uống;
+    |Hệ thống|
+    if (Sản phẩm tồn tại và đang bán?) then (Có)
+      :Hiển thị chi tiết, size, topping;
+      if (Sản phẩm còn hàng?) then (Có)
+        |Khách hàng|
+        :Chọn size, topping, số lượng;
+        |Hệ thống|
+        if (Lựa chọn hợp lệ và đủ hàng?) then (Có)
+          :Tính giá theo lựa chọn;
+          :Thêm món vào giỏ hàng;
+          :Cập nhật tổng tiền;
+          :Thông báo thêm thành công;
+        else (Không)
+          :Thông báo lựa chọn không hợp lệ\nhoặc không đủ hàng;
+        endif
+      else (Không)
+        :Thông báo sản phẩm hết hàng;
+      endif
+    else (Không)
+      :Thông báo sản phẩm không hợp lệ;
+    endif
+  endif
+
+  |Khách hàng|
+  if (Xem giỏ hàng?) then (Có)
+    :Mở giỏ hàng;
+    |Hệ thống|
+    :Hiển thị món và tổng tiền giỏ;
+    |Khách hàng|
+    while (Muốn sửa hoặc xóa món?) is (Có)
+      :Chọn thao tác;
+      if (Sửa món?) then (Có)
+        :Nhập size, topping, số lượng mới;
+        |Hệ thống|
+        if (Lựa chọn mới hợp lệ và đủ hàng?) then (Có)
+          :Lưu thay đổi dòng món;
+          :Tính lại thành tiền và tổng giỏ;
+        else (Không)
+          :Thông báo lỗi;
+          :Giữ dữ liệu giỏ trước khi sửa;
+        endif
+      else (Xóa)
+        |Hệ thống|
+        :Xóa dòng món được chọn;
+        :Tính lại tổng tiền giỏ;
+        if (Giỏ hàng trống?) then (Có)
+          :Hiển thị giỏ hàng trống;
+        endif
+      endif
+      |Khách hàng|
+    endwhile (Không)
+
+    if (Muốn đặt đơn?) then (Có)
+      |Hệ thống|
+      if (Giỏ hàng trống?) then (Có)
+        :Thông báo giỏ hàng trống;
+        :Yêu cầu chọn thêm sản phẩm;
+      else (Không)
+        :Chuyển sang Activity Checkout;
+        stop
+      endif
+    endif
+  endif
+
+  |Khách hàng|
+repeat while (Tiếp tục mua sắm?) is (Có) not (Không)
+:Kết thúc phiên mua sắm;
+stop
+
+@enduml
