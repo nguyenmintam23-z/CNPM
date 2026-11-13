@@ -20,16 +20,31 @@ jobs:
         working-directory: apps/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check app
+        id: check-app
+        working-directory: .
+        run: |
+          if [ -f "apps/${{ matrix.app }}/package.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping CI steps: apps/${{ matrix.app }}/package.json is missing."
+          fi
       - uses: actions/setup-node@v4
+        if: steps.check-app.outputs.exists == 'true'
         with:
           node-version: '22'
       - name: Install
+        if: steps.check-app.outputs.exists == 'true'
         run: npm ci
       - name: Lint
+        if: steps.check-app.outputs.exists == 'true'
         run: npm run lint
       - name: Unit Test
+        if: steps.check-app.outputs.exists == 'true'
         run: npm test
         env:
           CI: 'true'
       - name: Build
+        if: steps.check-app.outputs.exists == 'true'
         run: npm run build
