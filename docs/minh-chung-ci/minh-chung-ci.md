@@ -18,7 +18,7 @@
 | Bước | Kết quả | Minh chứng |
 |---|---|---|
 | Commit `b94f90a` cố ý làm sai 1 unit test: `availableQuantity(10, 3)` kỳ vọng 8 thay vì 7 | `CI api` đỏ ở bước **Unit Test**: `Expected: 8`, `Received: 7`, `Tests: 1 failed, 8 passed, 9 total` | Ảnh `1-ci-phat-hien-loi.png`; [run #9](https://github.com/nguyenmintam23-z/CNPM/actions/runs/43397670310) |
-| PR ở trạng thái đó | **Merging is blocked**: `CI api` (Required) failing, chưa có approval, nút Merge bị khóa | Ảnh `2-pr-bi-chan-merge.png` |
+| PR ở trạng thái đó | PR chưa đủ điều kiện merge. Check bắt buộc `CI api` đang thất bại và PR chưa có lượt duyệt bắt buộc. | Ảnh `2-pr-bi-chan-merge.png` |
 | Commit `298b86b` hoàn tác test | `CI api` và `CI web` đều xanh: **All checks have passed** | Ảnh `3-ci-xanh-sau-hoan-tac.png`; [run #10](https://github.com/nguyenmintam23-z/CNPM/actions/runs/43398540903) |
 | Kết thúc | Đóng PR, không merge | [PR #7](https://github.com/nguyenmintam23-z/CNPM/pull/7) |
 
