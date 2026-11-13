@@ -101,7 +101,7 @@ Web hiển thị 400 và 404 giống nhau: "Sản phẩm không tồn tại". **
 ## 5. Đăng nhập
 
 - **Sprint 1:** hai endpoint này chưa yêu cầu đăng nhập. Đây là giới hạn của MVP Sprint 1, phải ghi rõ. **[PC]** mục 3, 7. Ghi trong README. **[Đề xuất]**
-- **Task 5:** API trả `401` khi chưa có cookie phiên. Web chuyển khách tới trang đăng nhập và không hiện danh sách. **[Task trước]** FR-01, ADR-001
+- **Task 5 (đã làm, xem [`api-auth.md`](api-auth.md)):** API trả `401` khi chưa có cookie phiên. Web chuyển khách tới trang đăng nhập và không hiện danh sách. **[Task trước]** FR-01, ADR-001
 
 Phúc nên xử lý sẵn nhánh `401` ngay từ Sprint 1 để Task 5 khỏi phải sửa lại. **[Đề xuất]**
 

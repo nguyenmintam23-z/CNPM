@@ -1,12 +1,17 @@
 # BrewLite API (`apps/api`)
 
-NestJS + Prisma + PostgreSQL. Sprint 1 (Task 4.3) hiện thực `GET /products` và `GET /products/:id` theo hợp đồng [`api-products.md`](api-products.md) (Duy – Phúc chốt 13/11/2026).
+NestJS + Prisma + PostgreSQL.
 
-## Giới hạn của MVP Sprint 1
+| Phần | Endpoint | Hợp đồng |
+|---|---|---|
+| Sản phẩm (Sprint 1) | `GET /products`, `GET /products/:id` | [`api-products.md`](api-products.md) (Duy – Phúc chốt 13/11/2026) |
+| Xác thực, health check (Task 5) | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /health` | [`api-auth.md`](api-auth.md) |
 
-- Hai endpoint Product **chưa yêu cầu đăng nhập**. Đây là giới hạn tạm thời của Sprint 1, không thay đổi yêu cầu FR-01 "chưa đăng nhập thì không trả danh sách". JWT trong HttpOnly Cookie được làm ở Task 5 (ADR-001); khi đó chưa đăng nhập sẽ trả `401`.
-- Mới có bảng của phần Catalog: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`. Các bảng `users`, `orders`, `order_items`, `order_item_toppings`, `payments` được thêm bằng migration mới ở Task 5.
-- Chưa có `GET /health` và log JSON (NFR-07, thuộc phần vận hành ở Task 5).
+## Trạng thái Task 5
+
+- Mọi API cần đăng nhập (JWT trong cookie HttpOnly, ADR-001), trừ đăng ký, đăng nhập, đăng xuất và `/health`. Giới hạn "menu chưa cần đăng nhập" của Sprint 1 đã bỏ: chưa đăng nhập thì `GET /products` trả `401` (FR-01).
+- Bảng đã có: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`, `users`. Các bảng `orders`, `order_items`, `order_item_toppings`, `payments` thêm bằng migration mới khi chốt schema đơn hàng.
+- Log JSON ra stdout/stderr (NFR-07, backend-operations §3); mức log theo `LOG_LEVEL`.
 
 ## Cấu trúc
 
@@ -31,7 +36,7 @@ Cần Node.js 20 trở lên và PostgreSQL với database mã hóa **UTF8**.
 ```bash
 cd apps/api
 npm install
-# chép nhóm biến API trong .env.example ở gốc repo vào apps/api/.env, sửa DATABASE_URL
+# chép nhóm biến API trong .env.example ở gốc repo vào apps/api/.env, sửa DATABASE_URL và JWT_SECRET (tối thiểu 16 ký tự)
 npm run prisma:migrate:deploy   # tạo bảng
 npm run db:seed                 # nạp dữ liệu mẫu
 npm run dev                     # http://localhost:3001
@@ -40,8 +45,14 @@ npm run dev                     # http://localhost:3001
 Thử nhanh:
 
 ```bash
-curl http://localhost:3001/products
-curl http://localhost:3001/products/c1b2c3d4-0000-4000-8000-000000000001
+curl http://localhost:3001/health                      # {"status":"ok"}
+curl http://localhost:3001/products                    # 401 khi chưa đăng nhập
+curl -H "Content-Type: application/json" \
+  -d '{"email":"khach@example.com","password":"matkhau123","fullName":"Khach Thu"}' http://localhost:3001/auth/register
+curl -c cookie.txt -H "Content-Type: application/json" \
+  -d '{"email":"khach@example.com","password":"matkhau123"}' http://localhost:3001/auth/login
+curl -b cookie.txt http://localhost:3001/products      # 200
+curl -b cookie.txt -X POST http://localhost:3001/auth/logout
 ```
 
 ## Lệnh cho CI
