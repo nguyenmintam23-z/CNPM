@@ -128,7 +128,7 @@ Hệ thống phải tuân theo các ràng buộc về công nghệ, tiến độ
 
 | Mã | Rủi ro | Ảnh hưởng | Hướng giảm thiểu |
 |---|---|---|---|
-| RSK-01 | Yêu cầu giữa các thành viên không thống nhất | Tài liệu Scope, SRS, Use-case và sơ đồ thiết kế bị lệch mã hoặc mâu thuẫn quy tắc nghiệp vụ. | Chốt 7 quy tắc nghiệp vụ ở Bước 1 trước khi viết; thực hiện đối chiếu chéo ở Bước 3 và lập ma trận truy vết (`traceability-matrix.md`). |
+| RSK-01 | Yêu cầu giữa các thành viên không thống nhất | Tài liệu Scope, SRS, Use-case và sơ đồ thiết kế bị lệch mã hoặc mâu thuẫn quy tắc nghiệp vụ. | Thống nhất 7 quy tắc nghiệp vụ cốt lõi ngay từ đầu; thực hiện đối chiếu chéo giữa các tài liệu và lập ma trận truy vết (`traceability-matrix.md`). |
 | RSK-02 | Phạm vi MVP bị mở rộng quá mức (Scope creep) | Nhóm không kịp hoàn thành kiểm thử và triển khai CI/CD trong 2 Sprint. | Giới hạn phạm vi ở 11 hạng mục MVP cốt lõi; đưa các tính năng phức tạp sang phạm vi mở rộng. |
 | RSK-03 | Sai lệch tồn kho khi đặt đơn đồng thời | Số lượng còn hàng bị âm hoặc bán vượt số lượng thực tế khi có nhiều yêu cầu tạo đơn cùng lúc. | Thực hiện kiểm tra số lượng còn hàng và trừ tồn kho bên trong Database Transaction của PostgreSQL. |
 | RSK-04 | Xử lý lỗi thanh toán hoặc thanh toán lại chưa chặt chẽ | Đơn hàng bị mất khi thanh toán lỗi hoặc bị ghi nhận trùng giao dịch khi khách bấm thử lại nhiều lần. | Giữ đơn ở trạng thái chờ thanh toán khi giao dịch thất bại và áp dụng cơ chế Idempotency cho API thanh toán. |
@@ -150,13 +150,8 @@ Sau khi hoàn thiện phạm vi MVP, hệ thống có thể mở rộng theo cá
 
 ---
 
-## 8. Kết luận
 
-Tài liệu `context-and-scope.md` xác lập ranh giới phạm vi, các bên liên quan, giả định, ràng buộc kỹ thuật và phương án kiểm soát rủi ro cho hệ thống BrewLite. Đây là cơ sở tham chiếu bắt buộc để nhóm xây dựng đặc tả yêu cầu phần mềm (`srs.md`), đặc tả Use-case trọng tâm (`use-case-checkout.md`), thiết kế kiến trúc và triển khai mã nguồn trong các giai đoạn tiếp theo.
-
----
-
-## 9. Đối chiếu thống nhất với SRS
+## 8. Đối chiếu thống nhất với SRS
 
 - Phạm vi **MVP-01 → MVP-05** đối chiếu với **FR-01 → FR-05, FR-12, FR-19 → FR-21** trong tài liệu `docs/requirements/srs.md`.
 - Phạm vi **MVP-06 → MVP-08** đối chiếu với **FR-06, FR-07, FR-13 → FR-16, FR-18, FR-22** trong tài liệu `docs/requirements/srs.md`.
