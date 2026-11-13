@@ -1,0 +1,132 @@
+@startuml BrewLite_Production_Deployment
+title BrewLite - Deployment Diagram (Render + Docker)
+top to bottom direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+skinparam wrapWidth 230
+skinparam ArrowColor #52606D
+skinparam NoteBackgroundColor #FFF8DB
+skinparam NoteBorderColor #C9A227
+
+actor "Customer / Staff / Manager" as users
+
+package "LOCAL DEVELOPMENT" #F1F5F9 {
+  node "Developer Machine" as local {
+    artifact "docker-compose.yml" as compose
+    node "Next.js container" as localweb
+    node "NestJS container" as localapi
+    database "Local PostgreSQL\n(disposable volume)" as localdb
+    artifact ".env (git-ignored)\n.env.example (committed)" as localenv
+  }
+  localweb --> localapi : /api/* proxy\nserver-to-server
+  localapi --> localdb : PostgreSQL :5432
+  compose ..> localweb
+  compose ..> localapi
+  compose ..> localdb
+  localenv ..> localweb
+  localenv ..> localapi
+}
+
+package "CI ENVIRONMENT" #FFF7ED {
+  cloud "GitHub" as github {
+    artifact "Source Repository\napps/web/ • apps/api/ • docs/ • tests/" as source
+    artifact "GitHub Actions\nInstall → Lint → Unit Test → Build" as ci
+    note bottom of ci
+      Required PR checks.
+      Any failed check blocks merge
+      and production deployment.
+    end note
+  }
+  source --> ci : Pull Request / push
+}
+
+package "PRODUCTION — RENDER (same region)" #ECFDF5 {
+  node "BrewLite Web\nRender Web Service: brewlite-web\nPUBLIC HTTPS :443" as web {
+    artifact "Docker Container\nNext.js Frontend / PWA" as webimage
+    artifact "Health endpoint\n/ or /healthz" as webhealth
+  }
+  node "BrewLite API\nRender Web Service: brewlite-api\nPUBLIC HTTPS :443" as api {
+    artifact "Docker Container\nNestJS REST API" as apiimage
+    package "Application Modules" as modules {
+      component "AuthModule / UsersModule" as auth
+      component "CatalogModule" as catalog
+      component "OrdersModule" as orders
+      component "InventoryModule" as inventory
+      component "PaymentModule\n(PaymentService)" as payment
+      component "PrismaModule / HealthModule" as staff
+    }
+    artifact "GET /health\nHTTP 200 when ready" as apihealth
+  }
+  database "BrewLite Database\nRender PostgreSQL (managed)" as postgres {
+    artifact "Render-managed\npersistent database storage" as storage
+  }
+  node "Render Docker Build Pipeline\n(Git-backed services)" as renderbuild
+  artifact "Render-managed PRIVATE\ncontainer registry\n(built images)" as image_store
+  artifact "Render Logs / Metrics\nstdout + stderr" as logs
+
+  frame "Render Environment Variables / Secrets" as secrets {
+    artifact "brewlite-web:\nAPI_UPSTREAM_URL (server-only)\nproxy upstream; verify value\nNODE_ENV, PORT" as webvars
+    artifact "brewlite-api:\nDATABASE_URL (secret)\nJWT_SECRET (secret)\nCORS_ORIGIN (optional)\nNODE_ENV, PORT" as apivars
+  }
+  webvars ..> web : configure
+  apivars ..> api : configure
+  api --> postgres : Internal Database URL\nPrivate Network :5432
+  web --> api : REQUIRED Next.js /api/* proxy\nHTTPS upstream; forwards cookies
+  web --> logs : application logs
+  api --> logs : structured logs
+  renderbuild --> image_store : store built images
+  image_store --> web : deploy Web image
+  image_store --> api : deploy API image
+}
+
+node "User Device" as device {
+  artifact "Browser / Installed PWA" as browser
+}
+cloud "Public Internet" as internet
+users --> device
+browser --> internet
+internet --> web : HTTPS :443\nload Web and same-origin /api/*
+internet --> api : HTTPS :443\nNext.js server proxy upstream ONLY
+ci ..> renderbuild : Required checks pass\nbefore production deploy
+source ..> renderbuild : Fetch selected Git commit\nand Dockerfiles
+web --> webhealth
+api --> apihealth
+
+note right of renderbuild
+  Git-backed Docker deployment mode.
+  Render builds and stores images.
+  GitHub Actions runs checks only;
+  it does NOT push images to registry.
+  External GHCR/Docker Hub not required.
+end note
+
+note right of api
+  AuthModule reads JWT from HttpOnly cookie,
+  enforces roles, ownership and validation.
+  JWT: 30 minutes; logout revokes jti.
+  PaymentModule (PaymentService) is a NestJS module;
+  no real payment gateway is deployed.
+end note
+
+note bottom of postgres
+  Keep application traffic on the private network.
+  Do not use a container filesystem for relational data.
+end note
+
+note bottom of secrets
+  Browser accesses ONLY Web /api/*.
+  Next.js forwards Cookie and Set-Cookie.
+  Cookie: HttpOnly, Secure, SameSite=Lax, Path=/.
+  Never expose secrets via NEXT_PUBLIC_*.
+  DATABASE_URL and JWT_SECRET belong only
+  to the API service. Never commit real .env.
+end note
+
+note bottom of internet
+  Browser calls Web origin only.
+  API public service endpoint is an upstream
+  for Next.js server proxy, not browser requests.
+  API remains guarded; verify CSRF protections.
+end note
+@enduml

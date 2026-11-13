@@ -1,0 +1,40 @@
+@startuml c4-container
+top to bottom direction
+skinparam shadowing false
+skinparam nodesep 100
+skinparam ranksep 100
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+title C4 Level 2: Sơ đồ Container (Container Diagram) - BrewLite
+
+actor "Khách hàng\n(CUSTOMER)" as Customer
+actor "Nhân viên quầy\n(STAFF)" as Staff
+actor "Quản lý cửa hàng\n(MANAGER)" as Manager
+
+Customer -[hidden]right- Staff
+Staff -[hidden]right- Manager
+
+package "Hệ thống BrewLite (Production trên Render)" as SystemBoundary {
+
+  component "**BrewLite Web**\n[Container: Next.js / PWA - apps/web]\n\nGiao diện Mobile-first/PWA,\nquản lý giỏ hàng; phiên đăng nhập bằng cookie HttpOnly\n(Bắt buộc đăng nhập trước khi xem menu)\nProxy /api/* cùng origin sang BrewLite API" as WebContainer #D9EAD3
+
+  component "**BrewLite API**\n[Container: NestJS - apps/api]\n\n- AuthModule, UsersModule, CatalogModule,\n  InventoryModule, OrdersModule, PrismaModule\n- PaymentModule (PaymentService): mô phỏng Ví/Thẻ (gọi nội bộ)\n- HealthModule\n- Structured JSON Logging & GET /health" as ApiContainer #FCE5CD
+
+  database "**BrewLite Database**\n[Container: PostgreSQL - Render]\n\nLưu dữ liệu theo Class Domain\n(User, Product, Size, Topping, Order kèm stockHoldStatus,\nOrderItem, OrderItemTopping, Payment)\nQuản lý schema & migration bằng Prisma" as DbContainer #D0E0E3
+}
+
+Customer -down-> WebContainer : "Đăng nhập, xem menu, đặt đơn,\nthanh toán & theo dõi đơn\n[HTTPS]"
+Staff -down-> WebContainer : "Truy cập màn hình xử lý đơn\n[HTTPS]"
+Manager -down-> WebContainer : "Truy cập màn hình tra cứu đơn\n[HTTPS]"
+
+WebContainer -down-> ApiContainer : "Next.js server proxy /api/* gọi REST API,\nchuyển tiếp Cookie / Set-Cookie (JWT)\n[HTTPS / JSON]"
+ApiContainer -down-> DbContainer : "Đọc/ghi dữ liệu & khóa transaction\n[TCP 5432 / DATABASE_URL nội bộ]"
+
+note bottom of DbContainer
+  - Chuỗi kết nối cấu hình qua biến môi trường DATABASE_URL.
+  - Giữ tồn kho được quản lý qua thuộc tính stockHoldStatus
+    của Order và số lượng tồn của Product trong transaction.
+end note
+
+@enduml

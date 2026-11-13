@@ -1,0 +1,50 @@
+@startuml
+!include <C4/C4_Component>
+
+title C4 mức 3 (Component) - Container BrewLite API (NestJS)
+
+LAYOUT_TOP_DOWN()
+
+Person(customer, "Khách hàng", "Đã đăng nhập, vai trò CUSTOMER")
+Person(staff, "Nhân viên quầy / Quản lý", "Vai trò STAFF / MANAGER")
+
+Container(web, "BrewLite Web", "Next.js/PWA", "Giao diện mobile-first; giữ giỏ hàng phía client, gửi cart snapshot khi đặt đơn")
+
+Container_Boundary(api, "BrewLite API (NestJS)") {
+  Component(auth, "AuthModule", "NestJS module", "Đăng ký, đăng nhập, đăng xuất; cấp và kiểm tra JWT; guard kiểm tra vai trò (FR-12, FR-17, FR-20, FR-21)")
+  Component(users, "UsersModule", "NestJS module", "Tài khoản và vai trò CUSTOMER / STAFF / MANAGER; mật khẩu đã băm (NFR-03)")
+  Component(catalog, "CatalogModule", "NestJS module", "Menu, chi tiết món, size, topping; kiểm tra lựa chọn hợp lệ và giá phía máy chủ (FR-01..FR-05, FR-13)")
+  Component(inventory, "InventoryModule", "NestJS module", "Giữ / chốt / giải phóng tồn kho trên Product, mỗi việc đúng một lần (FR-13..FR-16, FR-23)")
+  Component(orders, "OrdersModule", "NestJS module", "Tạo đơn theo requestId, lịch sử, chi tiết, hủy đơn; hàng chờ và cập nhật tiến độ cho nhân viên; tra cứu cho quản lý (FR-06, FR-08..FR-11, FR-16..FR-18, FR-22..FR-24)")
+  Component(payment, "PaymentModule", "NestJS module", "Mỗi lần thử là một Payment; idempotencyKey; áp dụng kết quả cuối đúng một lần khi Payment còn PROCESSING (FR-07, FR-14, FR-15)")
+  Component(paysvc, "PaymentService", "Service trong PaymentModule", "Payment Service mô phỏng Ví / Thẻ; gọi nội bộ sau khi commit Payment PROCESSING; kết quả suy ra từ orderId + idempotencyKey")
+  Component(prisma, "PrismaModule", "NestJS module + Prisma Client", "Kết nối PostgreSQL, transaction và khóa dòng dùng chung")
+  Component(health, "HealthModule", "NestJS module", "GET /health (NFR-07) - chi tiết trong backend-operations.md")
+}
+
+ContainerDb(db, "BrewLite Database", "PostgreSQL trên Render", "Bảng theo Class Domain; ràng buộc UNIQUE, CHECK; migration Prisma; chặn kết nối từ bên ngoài")
+
+Rel(customer, web, "Dùng", "HTTPS")
+Rel(staff, web, "Dùng", "HTTPS")
+Rel(web, auth, "Đăng nhập / đăng ký", "JSON/HTTPS")
+Rel(web, catalog, "GET /products, GET /products/:id", "JSON/HTTPS + JWT")
+Rel(web, orders, "POST /orders/checkout; xem / hủy / cập nhật đơn", "JSON/HTTPS + JWT")
+Rel(web, payment, "POST /orders/{id}/payments", "JSON/HTTPS + JWT")
+
+Rel(auth, users, "Đọc tài khoản, vai trò")
+Rel(orders, catalog, "Kiểm tra món, size, topping; lấy giá")
+Rel(orders, inventory, "Giữ tồn khi tạo đơn; giải phóng khi hủy")
+Rel(payment, orders, "Khóa Order, kiểm tra trạng thái, chuyển CONFIRMED")
+Rel(payment, inventory, "Giữ lại khi thử lại; chốt hoặc giải phóng")
+Rel(payment, paysvc, "Gọi nội bộ / tra cứu theo idempotencyKey (ngoài transaction)")
+
+Rel(users, prisma, "Dùng")
+Rel(catalog, prisma, "Dùng")
+Rel(inventory, prisma, "Dùng")
+Rel(orders, prisma, "Dùng")
+Rel(payment, prisma, "Dùng")
+Rel(health, prisma, "Kiểm tra kết nối")
+Rel(prisma, db, "Đọc / ghi", "SQL qua DATABASE_URL (URL nội bộ Render)")
+
+SHOW_LEGEND()
+@enduml
