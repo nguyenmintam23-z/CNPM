@@ -22,9 +22,9 @@
 
 | Minh chứng | Link hoặc ảnh/log |
 |---|---|
-| Pull request | Chờ tích hợp |
-| CI thành công | Chờ chạy trên PR |
-| CI phát hiện lỗi | Chờ chạy ca kiểm tra |
-| PR bị chặn merge | Chờ cấu hình bảo vệ nhánh |
+| Pull request | [CNPM #7](https://github.com/nguyenmintam23-z/CNPM/pull/7) |
+| CI thành công | [Lần chạy sau khi hoàn tác lỗi kiểm thử](https://github.com/nguyenmintam23-z/CNPM/actions/runs/43398540903) | |
+| CI phát hiện lỗi | [Lần chạy có unit test thất bại](https://github.com/nguyenmintam23-z/CNPM/actions/runs/43397670310) | |
+| PR bị chặn merge | [Ảnh PR bị chặn merge](minh-chung-ci/2-pr-bi-chan-merge.png) |
 
 Đại phụ trách workflow và cấu hình bảo vệ nhánh. Tâm phối hợp kiểm thử tích hợp và thu minh chứng. Duy và Phúc bàn giao các lệnh kiểm tra của API và Web.

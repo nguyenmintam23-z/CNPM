@@ -10,8 +10,7 @@
 
 ## Product Backlog
 
-Product Backlog theo dõi các issue của Sprint 1 và Sprint 2. **Link issue board:** chờ nhóm cung cấp URL của board.
-
+[BrewLite Product Backlog — Sprint 1 và Sprint 2] https://github.com/users/nguyenmintam23-z/projects/2/views/1
 ## Chạy local sau khi tích hợp mã
 
 Cấu hình CI đề xuất dùng Node.js 22 và npm riêng cho từng app. Mỗi app cần `package.json`, `package-lock.json` và các script `lint`, `test`, `build`, `dev`. Script `test` chạy unit test một lần và thoát. Duy và Phúc xác nhận các lệnh trước khi bật kiểm tra bắt buộc.
