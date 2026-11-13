@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const apiUrl = process.env.API_INTERNAL_URL;
+  const apiUrl = process.env.API_UPSTREAM_URL;
 
   if (!apiUrl) {
     return NextResponse.json(

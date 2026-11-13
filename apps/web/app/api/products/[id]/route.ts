@@ -10,7 +10,7 @@ export async function GET(
   context: RouteContext
 ) {
   const { id } = await context.params;
-  const apiUrl = process.env.API_INTERNAL_URL;
+  const apiUrl = process.env.API_UPSTREAM_URL;
 
   if (!apiUrl) {
     return NextResponse.json(
