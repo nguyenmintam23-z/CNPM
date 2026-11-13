@@ -25,7 +25,7 @@ Dùng **Render** cho cả 3 container của C4 Level 2. Chi tiết cấu hình n
 2. **Mạng:** trình duyệt chỉ gọi BrewLite Web. Next.js server chuyển tiếp `/api/*` và `Cookie` / `Set-Cookie` tới BrewLite API. Lý do: `onrender.com` nằm trong Public Suffix List, nên cookie do API đặt trên hostname riêng bị coi là cookie bên thứ ba (xem [ADR-001](001-frontend-architecture.md)).
 3. **Database:** BrewLite API kết nối qua `DATABASE_URL` là URL nội bộ của Render, không mở PostgreSQL ra Internet. Mỗi lần deploy API chạy `prisma migrate deploy` trước khi nhận request. Seed chạy riêng, một lần, từ dịch vụ BrewLite API (xem [ADR-002](002-database-postgresql-prisma.md)).
 4. **Secrets và cấu hình:** `DATABASE_URL`, `JWT_SECRET` và URL upstream của proxy đặt trong Environment của từng service trên Render. Không commit vào Git, không đặt trong `NEXT_PUBLIC_*`, Docker image hoặc log.
-5. **Vận hành:** Render kiểm tra `GET /health` của BrewLite API và `/` của BrewLite Web (health check theo `deployment.md` §8.1). Log JSON ghi ra `stdout` và xem trong log của từng service trên Render (xem [ADR-003](003-payment-and-operations.md)).
+5. **Vận hành:** Render kiểm tra `GET /health` của BrewLite API (kiểm tra PostgreSQL, trả `200` hoặc `503`) và `GET /healthz` của BrewLite Web (route riêng, không cần đăng nhập, không chuyển hướng). Chi tiết trong `deployment.md` §8.1 và `backend-operations.md` mục 4. Log JSON ghi ra `stdout` và xem trong log của từng service trên Render (xem [ADR-003](003-payment-and-operations.md)).
 
 ## Lựa chọn khác
 
