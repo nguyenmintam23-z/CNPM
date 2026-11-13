@@ -7,7 +7,7 @@ const D = (v: number) => new Prisma.Decimal(v);
 
 describe('availableQuantity', () => {
   it('bằng tồn trừ đang giữ (Class Domain)', () => {
-    expect(availableQuantity(10, 3)).toBe(8); // LỖI CỐ Ý để kiểm tra CI, sẽ hoàn tác
+    expect(availableQuantity(10, 3)).toBe(7);
   });
 
   it('bằng 0 khi hết hàng, không âm', () => {
