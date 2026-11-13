@@ -1,0 +1,37 @@
+@startuml c4-context
+top to bottom direction
+skinparam shadowing false
+skinparam nodesep 110
+skinparam ranksep 120
+skinparam defaultTextAlignment center
+skinparam rectangle {
+  RoundCorner 10
+  Padding 15
+}
+
+title C4 Level 1: Sơ đồ Ngữ cảnh Hệ thống (System Context) - BrewLite
+
+actor "Khách hàng\n(CUSTOMER)" as Customer
+actor "Nhân viên quầy\n(STAFF)" as Staff
+actor "Quản lý cửa hàng\n(MANAGER)" as Manager
+
+Customer -[hidden]right- Staff
+Staff -[hidden]right- Manager
+
+rectangle "**Hệ thống BrewLite**\n[Software System]\n\nỨng dụng web mobile-first/PWA đặt đồ uống,\nkiểm soát tồn kho, thanh toán Ví/Thẻ mô phỏng\nvà quản lý tiến độ đơn hàng\ncho quy mô một cửa hàng" as BrewLiteSystem #E6F2FF
+
+Customer -down-> BrewLiteSystem : "Đăng ký/đăng nhập, xem menu,\nchọn size/topping, quản lý giỏ,\nđặt đơn, thanh toán mô phỏng,\ntheo dõi & hủy đơn chờ thanh toán\n[HTTPS]"
+Staff -down-> BrewLiteSystem : "Đăng nhập, xem danh sách đơn\nđã xác nhận và cập nhật tiến độ\n(CONFIRMED -> COMPLETED)\n[HTTPS]"
+Manager -down-> BrewLiteSystem : "Đăng nhập, tra cứu và lọc\ntoàn bộ đơn hàng của cửa hàng\n[HTTPS]"
+
+note bottom of BrewLiteSystem
+  **Phạm vi MVP:**
+  - Khách hàng bắt buộc đăng nhập để xem menu, đặt món,
+    thanh toán và theo dõi đơn hàng cá nhân (FR-01, ASM-03).
+  - Thanh toán Ví/Thẻ được mô phỏng nội bộ trong BrewLite API
+    (PaymentModule / PaymentService).
+  - Khách nhận đồ uống tại quầy; không giao hàng
+    và không thanh toán tiền thật.
+end note
+
+@enduml

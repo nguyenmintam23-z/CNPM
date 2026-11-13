@@ -86,7 +86,7 @@ class "Topping" as Topping {
 class "Order (Đơn hàng)" as Order {
   - id: UUID <color:#666666>// khóa chính</color>
   - orderCode: String {unique} <color:#666666>// mã đơn</color>
-  - requestId: String {unique} <color:#666666>// mã yêu cầu đặt đơn</color>
+  - requestId: String {unique theo User} <color:#666666>// mã yêu cầu đặt đơn</color>
   - status: OrderStatus <color:#666666>// trạng thái đơn</color>
   - stockHoldStatus: StockHoldStatus <color:#666666>// trạng thái giữ tồn kho</color>
   - totalAmount: Decimal <color:#666666>// tổng tiền</color>
@@ -112,7 +112,7 @@ class "Payment (Lần thanh toán)" as Payment {
   - method: PaymentMethod <color:#666666>// phương thức</color>
   - status: PaymentStatus <color:#666666>// trạng thái</color>
   - amount: Decimal <color:#666666>// số tiền</color>
-  - idempotencyKey: String {unique} <color:#666666>// khóa chống xử lý trùng</color>
+  - idempotencyKey: String {unique theo Order} <color:#666666>// khóa chống xử lý trùng</color>
   - createdAt: DateTime <color:#666666>// thời điểm gửi</color>
   - completedAt: DateTime [0..1] <color:#666666>// thời điểm có kết quả</color>
 }
@@ -160,11 +160,12 @@ LoyaltyType -[hidden]right- UserRole
 legend bottom
   Quy tắc chính:
   - Product: availableQuantity = stockQuantity - reservedQuantity; tồn kho nạp từ seed, bằng 0 thì báo hết hàng (FR-01, FR-13).
-  - Order: requestId chống tạo đơn trùng (FR-18); stockHoldStatus giữ khi tạo đơn, chốt khi thanh toán thành công,
-    giải phóng khi thanh toán thất bại hoặc hủy đơn, mỗi việc chỉ một lần (FR-14, FR-15, FR-23).
+  - Order: requestId chống tạo đơn trùng, duy nhất theo khách - UNIQUE (userId, requestId) (FR-18);
+    stockHoldStatus giữ khi tạo đơn, chốt khi thanh toán thành công, giải phóng khi thanh toán thất bại hoặc hủy đơn, mỗi việc chỉ một lần (FR-14, FR-15, FR-23).
   - Thanh toán lại sau thất bại: kiểm tra và giữ lại tồn kho (RELEASED → HELD) trước khi thanh toán;
     không đủ hàng thì từ chối, đơn vẫn PENDING_PAYMENT (FR-13, FR-14).
-  - Payment: mỗi lần thử thanh toán là một Payment (FR-14); gửi lại cùng idempotencyKey không xử lý trùng (FR-15).
+  - Payment: mỗi lần thử thanh toán là một Payment (FR-14); gửi lại cùng idempotencyKey không xử lý trùng,
+    idempotencyKey duy nhất theo đơn - UNIQUE (orderId, idempotencyKey) (FR-15).
   - OrderItem và OrderItemTopping lưu giá tại thời điểm tạo đơn (sizePrice, unitPrice, price);
     đổi giá Size, Topping, Product sau này không làm thay đổi đơn cũ.
   - Size dùng chung cho cả cửa hàng (ví dụ S, M, L), giá cộng thêm giống nhau; mỗi món cho phép một số size.

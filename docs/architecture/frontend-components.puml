@@ -1,0 +1,49 @@
+@startuml
+
+!include <C4/C4_Component>
+
+LAYOUT_LEFT_RIGHT()
+
+title BrewLite - C4 Level 3: BrewLite Web Components
+
+Person(customer, "Customer", "Khách hàng BrewLite")
+Person(staff, "Staff", "Nhân viên quầy")
+Person(manager, "Manager", "Quản lý cửa hàng")
+
+Container_Boundary(web, "BrewLite Web (Next.js/PWA)") {
+    Component(auth, "Auth", "Next.js", "Đăng nhập, đăng ký, quản lý phiên và bảo vệ truy cập")
+    Component(catalog, "Catalog", "Next.js", "Xem menu, chi tiết sản phẩm, chọn size và topping")
+    Component(cart, "Cart", "Client State", "Quản lý giỏ hàng, số lượng và giá tạm tính")
+    Component(checkout, "Checkout", "Next.js", "Xác nhận thông tin đặt hàng, tạo đơn và chuyển sang thanh toán")
+    Component(paymentUI, "Payment UI", "Next.js", "Thanh toán mô phỏng, thử lại và hiển thị trạng thái đang xử lý")
+    Component(orders, "Orders", "Next.js", "Lịch sử, trạng thái và hủy đơn chưa thanh toán")
+    Component(operations, "Operations UI", "Next.js", "Nhân viên xử lý đơn, quản lý tra cứu đơn")
+    Component(apiClient, "API Client", "HTTP", "Gọi /api/* cùng origin, gửi cookie tự động và xử lý lỗi")
+}
+
+Container(api, "BrewLite API", "NestJS", "Xác thực JWT, phân quyền và nghiệp vụ; PaymentService nội bộ")
+
+Rel(customer, auth, "Đăng nhập / đăng ký")
+Rel(customer, catalog, "Xem menu")
+Rel(customer, cart, "Quản lý giỏ hàng")
+Rel(customer, checkout, "Đặt hàng")
+Rel(customer, orders, "Theo dõi và hủy đơn")
+Rel(staff, operations, "Xem và cập nhật tiến độ đơn")
+Rel(manager, operations, "Tra cứu và lọc đơn")
+
+Rel(auth, catalog, "Bảo vệ truy cập menu sau khi đăng nhập")
+Rel(operations, auth, "Kiểm tra phiên và vai trò")
+Rel(catalog, cart, "Thêm sản phẩm đã chọn vào giỏ")
+Rel(cart, checkout, "Chuyển dữ liệu giỏ hàng")
+Rel(checkout, paymentUI, "Chuyển sang thanh toán")
+
+Rel(auth, apiClient, "Xác thực")
+Rel(catalog, apiClient, "Lấy danh sách và chi tiết sản phẩm")
+Rel(checkout, apiClient, "Tạo đơn / đặt hàng")
+Rel(paymentUI, apiClient, "Thanh toán / thử lại / tra cứu kết quả")
+Rel(orders, apiClient, "Lấy lịch sử, chi tiết và hủy đơn")
+Rel(operations, apiClient, "Lấy danh sách, cập nhật và tra cứu đơn")
+
+Rel(apiClient, api, "Next.js proxy /api/* chuyển tiếp request và Cookie / Set-Cookie", "HTTPS/JSON")
+
+@enduml
