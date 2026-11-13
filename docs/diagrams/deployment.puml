@@ -44,7 +44,7 @@ package "CI ENVIRONMENT" #FFF7ED {
 package "PRODUCTION — RENDER (same region)" #ECFDF5 {
   node "BrewLite Web\nRender Web Service: brewlite-web\nPUBLIC HTTPS :443" as web {
     artifact "Docker Container\nNext.js Frontend / PWA" as webimage
-    artifact "Health endpoint\n/ or /healthz" as webhealth
+    artifact "Health endpoint\nGET /healthz (200, no login)" as webhealth
   }
   node "BrewLite API\nRender Web Service: brewlite-api\nPUBLIC HTTPS :443" as api {
     artifact "Docker Container\nNestJS REST API" as apiimage
@@ -56,7 +56,7 @@ package "PRODUCTION — RENDER (same region)" #ECFDF5 {
       component "PaymentModule\n(PaymentService)" as payment
       component "PrismaModule / HealthModule" as staff
     }
-    artifact "GET /health\nHTTP 200 when ready" as apihealth
+    artifact "GET /health\n200 when API + DB ready\n503 when DB unreachable" as apihealth
   }
   database "BrewLite Database\nRender PostgreSQL (managed)" as postgres {
     artifact "Render-managed\npersistent database storage" as storage

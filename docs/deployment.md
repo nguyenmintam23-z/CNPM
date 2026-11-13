@@ -164,10 +164,10 @@ Client browser chỉ gọi URL tương đối `/api/*`; thiết kế này **khô
 
 | Dịch vụ | Endpoint thiết kế | Kết quả kỳ vọng |
 |---|---|---|
-| BrewLite Web | `/` hoặc `/healthz` | HTTP 2xx/3xx khi web sẵn sàng; đường health không yêu cầu khách đăng nhập. |
-| BrewLite API | `GET /health` | `200 OK` khi API sẵn sàng; có thể trả JSON tối giản `{"status":"ok"}`. |
+| BrewLite Web | `GET /healthz` | `200 OK` khi Next.js sẵn sàng; route riêng, không yêu cầu đăng nhập và không chuyển hướng (trang `/` có thể chuyển sang đăng nhập theo FR-01). |
+| BrewLite API | `GET /health` | Kiểm tra PostgreSQL bằng một truy vấn nhẹ có timeout ngắn: `200 OK` khi API và database sẵn sàng; `503` khi database không truy cập được. Phản hồi chỉ chứa trạng thái tổng quát, ví dụ `{"status":"ok"}`. |
 
-Nếu kiểm tra kết nối database trong readiness, cần timeout ngắn và không tiết lộ thông tin nội bộ. Endpoint và dashboard health check mới là **hợp đồng thiết kế**, chưa khẳng định đã có code chạy.
+Hợp đồng `GET /health` thống nhất với [`backend-operations.md`](architecture/backend-operations.md) mục 4. Phản hồi không tiết lộ thông tin nội bộ. Endpoint và dashboard health check mới là **hợp đồng thiết kế**, chưa khẳng định đã có code chạy.
 
 ### 8.2. Logging
 
@@ -277,8 +277,8 @@ Các quan hệ và yêu cầu nghiệp vụ chi tiết cần được đối chi
 
 ### 15.4. Hợp đồng health check
 
-- NestJS: `GET /health`, thành công trả `200 OK`, nội dung có thể là `{"status":"ok"}`; không để lộ secrets/stack trace.
-- Next.js: `/` hoặc `/healthz`, không cần đăng nhập để Render thực hiện readiness check.
+- NestJS: `GET /health` kiểm tra PostgreSQL với timeout ngắn; trả `200 OK` khi sẵn sàng, `503` khi database không truy cập được; nội dung có thể là `{"status":"ok"}`; không để lộ secrets/stack trace.
+- Next.js: `GET /healthz` trả `200 OK`, không cần đăng nhập và không chuyển hướng, để Render thực hiện readiness check.
 - Đây là endpoint theo thiết kế; cần triển khai và kiểm thử ở giai đoạn lập trình.
 
 ### 15.5. Phạm vi thể hiện CI trong Task 3

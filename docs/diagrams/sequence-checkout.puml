@@ -127,15 +127,15 @@
        else Đủ hàng
          API -> DB: INSERT Order (PENDING_PAYMENT, requestId, totalAmount,\nstockHoldStatus=HELD)
          note right of DB
-           Order.requestId có ràng buộc UNIQUE.
-           Hai request cùng requestId gửi đồng thời:
+           Order có ràng buộc UNIQUE (userId, requestId).
+           Hai request của cùng khách, cùng requestId gửi đồng thời:
            chỉ một INSERT thành công (FR-18).
          end note
          API -> DB: INSERT OrderItem(s)
          API -> DB: Giữ tồn kho (reservedQuantity tăng)
-         alt Vi phạm UNIQUE requestId - request trùng đến đồng thời (E4, FR-18)
+         alt Vi phạm UNIQUE (userId, requestId) - request trùng đến đồng thời (E4, FR-18)
            API -> DB: ROLLBACK (không tạo đơn thứ hai, không giữ tồn lần hai)
-           API -> DB: Đọc Order theo requestId
+           API -> DB: Đọc Order theo requestId của khách hiện tại
            DB --> API: Order do request đầu tiên tạo
            API --> UI: Trả lại cùng orderCode và thông tin đơn
            UI --> Customer: Hiển thị đơn hiện có
@@ -277,13 +277,13 @@
 
            API -> DB: INSERT Payment (PROCESSING, method, idempotencyKey K,\namount = Order.totalAmount)
            note right of DB
-             Payment.idempotencyKey có ràng buộc UNIQUE:
-             hai yêu cầu cùng K gửi đồng thời chỉ một
+             Payment có ràng buộc UNIQUE (orderId, idempotencyKey):
+             hai yêu cầu cùng đơn, cùng K gửi đồng thời chỉ một
              INSERT thành công (FR-15).
            end note
-           alt Vi phạm UNIQUE idempotencyKey - yêu cầu cùng K đến đồng thời (E7, FR-15)
+           alt Vi phạm UNIQUE (orderId, idempotencyKey) - yêu cầu cùng K đến đồng thời (E7, FR-15)
              API -> DB: ROLLBACK (hoàn tác cả phần giữ lại tồn của yêu cầu này)
-             API -> DB: Đọc Payment theo K
+             API -> DB: Đọc Payment theo K của Order này
              DB --> API: Payment do yêu cầu đầu tiên tạo
              API --> UI: Kết quả hiện tại của K (PROCESSING hoặc kết quả cuối)
              UI --> Customer: Hiển thị Đang xử lý hoặc kết quả; không xử lý lại
