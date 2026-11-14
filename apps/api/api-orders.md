@@ -1,4 +1,4 @@
-# Hợp đồng API – Tạo đơn (Task 5)
+# Hợp đồng API – Tạo đơn và thanh toán (Task 5)
 
 Nguồn: đề 7.1 (tạo đơn hàng); SRS FR-06, FR-12, FR-13, FR-16, FR-18, FR-22; UC-01 bước 5–8, E1–E4, E8; Sequence Checkout; `backend-data-design.md` §5; schema Đại chốt (PR #54).
 
@@ -124,4 +124,71 @@ Thiếu hàng (`409`): số lượng gộp theo món.
 - Tạo `requestId` khi khách bấm **Xác nhận đặt đơn**; lưu tạm cùng giỏ để gửi lại đúng mã nếu mất phản hồi. Chỉ tạo mã mới khi khách đổi giỏ.
 - Gặp `400` có `lines`: tô đỏ đúng dòng theo `index`, giữ giỏ. Gặp `409 shortages`: báo món hết/thiếu, cho khách giảm số lượng hoặc xóa món, giữ giỏ (FR-13).
 - Gặp `401`: giữ giỏ, chuyển đăng nhập rồi quay lại checkout (FR-12, A1).
-- Thành công: hiển thị `orderCode`, danh sách món, `totalAmount` và hai phương thức Ví/Thẻ mô phỏng (UC-01 bước 8). API thanh toán ở PR sau.
+- Thành công: hiển thị `orderCode`, danh sách món, `totalAmount` và hai phương thức Ví/Thẻ mô phỏng (UC-01 bước 8), rồi gọi API thanh toán ở §6.
+
+## 6. Thanh toán `POST /orders/{id}/payments`
+
+Nguồn: đề 7.1 (thanh toán Ví/Thẻ mô phỏng); SRS FR-07, FR-14, FR-15; UC-01 bước 9–12, A2, E5–E7; Sequence Checkout; `backend-data-design.md` §5; `backend-operations.md` §2.
+
+Trình duyệt gọi `POST /api/orders/{id}/payments` qua proxy. Chỉ `CUSTOMER` là chủ đơn.
+
+```json
+{ "method": "WALLET", "idempotencyKey": "7e1f6a52-2c4b-4a3d-9b8e-5d0c1f2a3b4c" }
+```
+
+| Trường | Quy tắc |
+|---|---|
+| `method` | `WALLET` (Ví mô phỏng) hoặc `CARD` (Thẻ mô phỏng). Không nhận thông tin thẻ thật. |
+| `idempotencyKey` | Client tạo **một lần cho mỗi lần thử** (nên dùng `crypto.randomUUID()`). Gửi lại do mất phản hồi hoặc để tra cứu kết quả: **giữ nguyên khóa**. Thử lại sau thất bại: **khóa mới** (FR-14, FR-15). 8–64 ký tự chữ, số, `-`, `_`. |
+
+Gửi thêm trường lạ, ví dụ `amount` hay kịch bản mô phỏng, bị từ chối `400`. Số tiền luôn bằng `totalAmount` của đơn; kết quả mô phỏng do server chọn.
+
+### Response
+
+| Mã | Khi nào |
+|---|---|
+| `200` | Có kết quả cuối: `payment.status` là `SUCCEEDED` hoặc `FAILED`. Thất bại là kết quả nghiệp vụ, không phải lỗi HTTP. |
+| `202` | Chưa có kết quả (`PROCESSING`, kịch bản phản hồi chậm). Gửi lại **cùng khóa** sau vài giây để lấy kết quả (E6). |
+| `400` | `method` hoặc `idempotencyKey` sai, mã đơn sai định dạng, có trường lạ |
+| `401` | Chưa đăng nhập hoặc JWT hết hạn (giữ đơn, đăng nhập lại) |
+| `403` | Không phải `CUSTOMER`, hoặc đơn không phải của mình |
+| `404` | Không có đơn |
+| `409` | `ORDER_NOT_PAYABLE`: đơn không còn chờ thanh toán (đã xác nhận, đã hủy). `PAYMENT_IN_PROGRESS`: đơn đang có lần thanh toán khác chưa xong, hãy tra lần đó bằng khóa cũ. `shortages`: thử lại sau thất bại nhưng món đã hết (E5), đơn vẫn chờ thanh toán. |
+
+```json
+{
+  "payment": {
+    "id": "…uuid…",
+    "method": "WALLET",
+    "status": "FAILED",
+    "amount": 104000,
+    "createdAt": "2026-11-15T03:05:00.000Z",
+    "completedAt": "2026-11-15T03:05:00.120Z",
+    "failureReason": "Ví mô phỏng từ chối giao dịch. Vui lòng thử lại."
+  },
+  "order": { "id": "…uuid…", "orderCode": "BL-261115-K7Q2M", "status": "PENDING_PAYMENT", "stockHoldStatus": "RELEASED" }
+}
+```
+
+`failureReason` chỉ có khi `FAILED`.
+
+### Trạng thái sau thanh toán
+
+| Kết quả | Payment | Order | Tồn kho |
+|---|---|---|---|
+| Thành công | `SUCCEEDED` | `CONFIRMED`, `COMMITTED`; vào hàng chờ nhân viên | Trừ `stock` và `reserved` |
+| Thất bại | `FAILED` | Vẫn `PENDING_PAYMENT`, `RELEASED`, giữ mã đơn | Trả lại `reserved` |
+| Đang xử lý | `PROCESSING` | Vẫn `PENDING_PAYMENT`, `HELD` | Vẫn giữ |
+
+### Bảo đảm phía server
+
+- Bắt đầu thanh toán là một transaction: khóa dòng đơn → kiểm tra chủ đơn → tra Payment theo `(orderId, idempotencyKey)` **trước** khi xét trạng thái đơn → đơn phải chờ thanh toán, không có lần nào đang xử lý → nếu tồn đã `RELEASED` (thử lại) thì giữ lại tồn → tạo Payment `PROCESSING` → commit.
+- Gọi bộ mô phỏng **ngoài** transaction. Áp dụng kết quả trong transaction mới, chỉ khi Payment còn `PROCESSING`, nên chốt hoặc giải phóng tồn đúng một lần, kể cả khi nhiều yêu cầu cùng khóa đến cùng lúc (E7).
+- Cùng khóa luôn ra cùng kết quả, kể cả sau khi API khởi động lại (bộ mô phỏng băm `orderId` + `idempotencyKey`).
+
+### Gợi ý cho BrewLite Web
+
+- Tạo `idempotencyKey` khi khách bấm **Xác nhận thanh toán**, giữ đến khi có kết quả cuối.
+- `202`: hiển thị **Đang xử lý**, gửi lại cùng khóa sau 2–3 giây (E6).
+- `FAILED`: hiển thị `failureReason`, nút **Thử lại** tạo khóa mới. `409 shortages`: báo món hết, đơn vẫn chờ thanh toán (khách có thể hủy đơn, FR-23, PR sau).
+- `SUCCEEDED`: hiển thị `orderCode` và trạng thái **Đã xác nhận** (UC-01 bước 12).
