@@ -12,6 +12,22 @@ NestJS + Prisma + PostgreSQL.
 - Mọi API cần đăng nhập (JWT trong cookie HttpOnly, ADR-001), trừ đăng ký, đăng nhập, đăng xuất và `/health`. Giới hạn "menu chưa cần đăng nhập" của Sprint 1 đã bỏ: chưa đăng nhập thì `GET /products` trả `401` (FR-01).
 - Bảng đã có: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`, `users`. Các bảng `orders`, `order_items`, `order_item_toppings`, `payments` thêm bằng migration mới khi chốt schema đơn hàng.
 - Log JSON ra stdout/stderr (NFR-07, backend-operations §3); mức log theo `LOG_LEVEL`.
+- `PaymentService` (bộ mô phỏng Ví/Thẻ) đã có trong `PaymentModule`; endpoint `POST /orders/{id}/payments` thêm khi có bảng `orders`, `payments`.
+
+## Thanh toán mô phỏng (`src/payment`)
+
+Theo `backend-operations.md` §2 và ADR-003. **[Task trước]**
+
+- Kết quả chọn bằng băm cố định từ `orderId` và `idempotencyKey`: cùng khóa luôn ra cùng kết quả, kể cả sau khi API khởi động lại (FR-15, E6). Client không gửi được kịch bản.
+- Tỉ lệ: 70% thành công, 20% thất bại, 5% chậm rồi thành công, 5% chậm rồi thất bại. Kịch bản chậm trả `PROCESSING` cho tới khi qua thời gian chờ tính từ lúc tạo Payment.
+- `PaymentService` không ghi database. Luồng checkout ghi Payment, Order, tồn kho trong transaction, chỉ khi Payment còn `PROCESSING` (backend-data-design §5).
+
+Biến môi trường chỉ dùng ở local và kiểm thử E2E (để trống ở production): **[Đề xuất]**
+
+| Biến | Ý nghĩa |
+|---|---|
+| `PAYMENT_SIM_SCENARIO` | Ép kịch bản: `SUCCESS`, `FAILURE`, `SLOW_SUCCESS`, `SLOW_FAILURE`. Bị bỏ qua khi `NODE_ENV=production` |
+| `PAYMENT_SIM_DELAY_MS` | Thời gian phản hồi chậm, mặc định `5000` |
 
 ## Cấu trúc
 
