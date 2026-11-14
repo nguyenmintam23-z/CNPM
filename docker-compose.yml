@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: brewlite
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.task5}
+      POSTGRES_DB: brewlite
+    volumes:
+      - task5-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "brewlite", "-d", "brewlite"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  api:
+    build: ./apps/api
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://brewlite:${POSTGRES_PASSWORD}@db:5432/brewlite
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      COOKIE_SECURE: "false"
+      LOG_LEVEL: info
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3001:3001"
+  web:
+    build: ./apps/web
+    environment:
+      PORT: 3000
+      API_UPSTREAM_URL: http://api:3001
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:3000"
+volumes:
+  task5-db:
