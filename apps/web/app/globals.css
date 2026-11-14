@@ -1,5 +1,6 @@
 @import "tailwindcss";
-
+@source "../components/menu";
+@source "../components/auth";
 :root {
   --background: #ffffff;
   --foreground: #171717;
