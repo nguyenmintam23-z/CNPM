@@ -4,14 +4,14 @@ type AuthMode = "login" | "register";
 
 const visuals = {
   login: {
-    image: "https://images.unsplash.com/photo-1664515725366-e8328e9dc834?auto=format&fit=crop&w=1400&q=88",
+image: "/images/login-coffee.jpg",
     alt: "Ly cà phê sữa đá Việt Nam",
     eyebrow: "Cà phê Việt, tinh tế mỗi ngày",
     title: "Đậm vị nguyên bản,\nnhẹ nhàng từng phút giây.",
     note: "Từ hạt cà phê được tuyển chọn đến ly cà phê dành riêng cho bạn.",
   },
   register: {
-    image: "https://images.unsplash.com/photo-1782351076283-73aa35f76058?auto=format&fit=crop&w=1400&q=88",
+  image: "/images/register-coffee.jpg",
     alt: "Tách gốm xanh trên bàn gỗ",
     eyebrow: "Một khoảng xanh dành cho bạn",
     title: "Gieo một thói quen,\nthưởng một vị an lành.",
