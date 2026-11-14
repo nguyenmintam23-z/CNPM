@@ -6,13 +6,15 @@ NestJS + Prisma + PostgreSQL.
 |---|---|---|
 | Sản phẩm (Sprint 1) | `GET /products`, `GET /products/:id` | [`api-products.md`](api-products.md) (Duy – Phúc chốt 13/11/2026) |
 | Xác thực, health check (Task 5) | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /health` | [`api-auth.md`](api-auth.md) |
+| Tạo đơn (Task 5) | `POST /orders/checkout` | [`api-orders.md`](api-orders.md) |
 
 ## Trạng thái Task 5
 
 - Mọi API cần đăng nhập (JWT trong cookie HttpOnly, ADR-001), trừ đăng ký, đăng nhập, đăng xuất và `/health`. Giới hạn "menu chưa cần đăng nhập" của Sprint 1 đã bỏ: chưa đăng nhập thì `GET /products` trả `401` (FR-01).
-- Bảng đã có: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`, `users`. Các bảng `orders`, `order_items`, `order_item_toppings`, `payments` thêm bằng migration mới khi chốt schema đơn hàng.
+- Bảng đã có: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`, `users`, `orders`, `order_items`, `order_item_toppings`, `payments` (schema đơn hàng do Đại phụ trách, PR #54).
+- Tạo đơn: một transaction khóa `products` theo `id` tăng dần, kiểm tra lựa chọn và tính giá ở server (`CatalogModule`), giữ tồn (`InventoryModule`), chống tạo trùng bằng `requestId` (`OrdersModule`). Xem `api-orders.md` §4.
 - Log JSON ra stdout/stderr (NFR-07, backend-operations §3); mức log theo `LOG_LEVEL`.
-- `PaymentService` (bộ mô phỏng Ví/Thẻ) đã có trong `PaymentModule`; endpoint `POST /orders/{id}/payments` thêm khi có bảng `orders`, `payments`.
+- `PaymentService` (bộ mô phỏng Ví/Thẻ) đã có trong `PaymentModule`; endpoint `POST /orders/{id}/payments` làm ở PR tiếp theo.
 
 ## Thanh toán mô phỏng (`src/payment`)
 
