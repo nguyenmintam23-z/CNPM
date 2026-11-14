@@ -103,7 +103,8 @@ function isUniqueViolation(err: unknown, field: string): boolean {
 
 /**
  * OrdersModule – tạo đơn (backend-data-design §5 "Tạo đơn"; UC-01 bước 6–7; FR-06, FR-13, FR-16, FR-18, FR-22).
- * Một transaction: khóa products theo id → kiểm tra lựa chọn, tính giá ở server → kiểm tra tồn →
+ * Một transaction: khóa products theo id → tra lại requestId (đã có thì trả đơn cũ) →
+ * kiểm tra lựa chọn, tính giá ở server → kiểm tra tồn →
  * tạo đơn PENDING_PAYMENT / HELD với mã duy nhất → tăng reserved_quantity. Lỗi ở bất kỳ bước nào thì hoàn tác hết.
  */
 @Injectable()
@@ -123,9 +124,13 @@ export class OrdersService {
 
     for (let lan = 0; lan < 3; lan++) {
       try {
-        const order = await this.prisma.$transaction((tx) => this.createInTx(tx, userId, requestId, items));
-        this.logger.log({ event: 'order_created', orderId: order.id, orderCode: order.orderCode, userId });
-        return { order: toOrderView(order), created: true };
+        const kq = await this.prisma.$transaction((tx) => this.createInTx(tx, userId, requestId, items));
+        if (kq.daCo) {
+          this.logger.log({ event: 'order_duplicate_request', orderId: kq.daCo.id, userId });
+          return { order: this.sameOrConflict(kq.daCo, items), created: false };
+        }
+        this.logger.log({ event: 'order_created', orderId: kq.order.id, orderCode: kq.order.orderCode, userId });
+        return { order: toOrderView(kq.order), created: true };
       } catch (err) {
         if (isUniqueViolation(err, 'request_id')) {
           // Hai yêu cầu cùng mã chạy song song: bản thua đọc lại đơn của bản thắng (FR-18).
@@ -142,11 +147,18 @@ export class OrdersService {
     throw new Error('Không tạo được mã đơn duy nhất sau 3 lần thử');
   }
 
-  private async createInTx(tx: Prisma.TransactionClient, userId: string, requestId: string, items: CartLineInput[]) {
+  private async createInTx(
+    tx: Prisma.TransactionClient, userId: string, requestId: string, items: CartLineInput[],
+  ): Promise<{ daCo: OrderWithItems; order?: undefined } | { daCo?: undefined; order: OrderWithItems }> {
     const locked = await this.inventory.lockProducts(tx, items.map((i) => i.productId));
+    // Tra lại requestId SAU khi lấy khóa (giống thứ tự §5 cho thanh toán: khóa rồi mới tra khóa chống trùng).
+    // Hai yêu cầu cùng requestId, cùng giỏ khóa cùng các dòng products: yêu cầu sau chờ yêu cầu trước commit,
+    // rồi thấy đơn đã có ở đây và trả lại đơn đó, thay vì kiểm tồn và báo hết hàng (FR-18, E4; góp ý của Tâm).
+    const daCo = await tx.order.findUnique({ where: { userId_requestId: { userId, requestId } }, include: ORDER_INCLUDE });
+    if (daCo) return { daCo };
     const cart = await this.pricing.price(tx, items); // 400 kèm dòng cần sửa
     await this.inventory.hold(tx, cart.lines, locked); // 409 kèm món thiếu
-    return tx.order.create({
+    const order = await tx.order.create({
       data: {
         orderCode: newOrderCode(),
         userId,
@@ -166,6 +178,7 @@ export class OrdersService {
       },
       include: ORDER_INCLUDE,
     });
+    return { order };
   }
 
   private findByRequest(userId: string, requestId: string): Promise<OrderWithItems | null> {

@@ -26,7 +26,8 @@ const p2002 = (target: string[]) => new Prisma.PrismaClientKnownRequestError('du
 describe('OrdersService.checkout (FR-06, FR-16, FR-18)', () => {
   const findUnique = jest.fn();
   const create = jest.fn();
-  const tx = { order: { create } };
+  const txFindUnique = jest.fn();
+  const tx = { order: { create, findUnique: txFindUnique } };
   const $transaction: jest.Mock = jest.fn((fn: (t: unknown) => unknown) => fn(tx));
   const prisma = { order: { findUnique }, $transaction } as unknown as PrismaService;
   const pricing = { price: jest.fn() } as unknown as PricingService & { price: jest.Mock };
@@ -38,6 +39,7 @@ describe('OrdersService.checkout (FR-06, FR-16, FR-18)', () => {
     jest.clearAllMocks();
     service = new OrdersService(prisma, pricing, inventory);
     inventory.lockProducts.mockResolvedValue([]);
+    txFindUnique.mockResolvedValue(null);
     pricing.price.mockResolvedValue({
       totalAmount: D(52000),
       lines: [{ productId: 'p-ts', sizeId: 's-l', quantity: 1, sizePrice: D(10000), unitPrice: D(52000), lineTotal: D(52000),
@@ -45,7 +47,7 @@ describe('OrdersService.checkout (FR-06, FR-16, FR-18)', () => {
     });
   });
 
-  it('tạo đơn mới: khóa tồn → tính giá → giữ tồn → ghi đơn, trong một transaction; trả created = true', async () => {
+  it('tạo đơn mới: khóa tồn → tra lại requestId → tính giá → giữ tồn → ghi đơn, trong một transaction; trả created = true', async () => {
     findUnique.mockResolvedValue(null);
     create.mockResolvedValue(donMau());
     const r = await service.checkout('u1', 'req-00001', GIO);
@@ -54,7 +56,7 @@ describe('OrdersService.checkout (FR-06, FR-16, FR-18)', () => {
     expect(r.order).toMatchObject({ orderCode: 'BL-261115-ABCDE', status: 'PENDING_PAYMENT', stockHoldStatus: 'HELD', totalAmount: 52000 });
     expect(r.order.items[0]).toMatchObject({ sizePrice: 10000, unitPrice: 52000, lineTotal: 52000, toppings: [{ id: 't-tc', price: 7000 }] });
     expect($transaction).toHaveBeenCalledTimes(1);
-    const thuTu = [inventory.lockProducts, pricing.price, inventory.hold, create].map((m) => m.mock.invocationCallOrder[0]);
+    const thuTu = [inventory.lockProducts, txFindUnique, pricing.price, inventory.hold, create].map((m) => m.mock.invocationCallOrder[0]);
     expect(thuTu).toEqual([...thuTu].sort((a, b) => a - b));
     const data = create.mock.calls[0][0].data;
     expect(data).toMatchObject({ userId: 'u1', requestId: 'req-00001', totalAmount: D(52000) });
@@ -81,6 +83,16 @@ describe('OrdersService.checkout (FR-06, FR-16, FR-18)', () => {
     findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(donMau());
     $transaction.mockRejectedValueOnce(p2002(['user_id', 'request_id']));
     await expect(service.checkout('u1', 'req-00001', GIO)).resolves.toMatchObject({ created: false, order: { id: 'o1' } });
+  });
+
+  it('cùng requestId, món chỉ đủ cho một đơn: yêu cầu sau lấy được khóa thì thấy đơn đã có → 200 đơn cũ, không kiểm tồn (FR-18; góp ý của Tâm)', async () => {
+    findUnique.mockResolvedValue(null); // trước transaction: yêu cầu trước chưa commit
+    txFindUnique.mockResolvedValue(donMau()); // sau khi chờ khóa: yêu cầu trước đã commit
+    const r = await service.checkout('u1', 'req-00001', GIO);
+    expect(r).toMatchObject({ created: false, order: { orderCode: 'BL-261115-ABCDE' } });
+    expect(pricing.price).not.toHaveBeenCalled();
+    expect(inventory.hold).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('trùng mã đơn ngẫu nhiên → thử lại với mã khác', async () => {
