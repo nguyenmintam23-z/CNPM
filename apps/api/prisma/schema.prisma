@@ -1,7 +1,5 @@
-// BrewLite Database – Prisma schema
-// Nguồn: Class Domain (docs/diagrams/class-domain.puml), backend-data-design §4, ADR-002.
-// Sprint 1: Catalog. Sprint 2: users (Task 5, nhánh feat/39-health-auth); orders, order_items,
-// order_item_toppings, payments thêm bằng migration riêng khi chốt schema đơn hàng với Đại.
+// BrewLite Database – Prisma schema (Sprint 1: Catalog; Sprint 2 / Task 5: Users, Orders, Payments)
+// Nguồn: Class Domain (docs/diagrams/class-domain.puml), backend-data-design §4–§5, ADR-002.
 
 generator client {
   provider = "prisma-client-js"
@@ -12,24 +10,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Vai trò người dùng (Class Domain: UserRole).
+// ───────────── Enum (backend-data-design §4.2) ─────────────
+
 enum UserRole {
   CUSTOMER
   STAFF
   MANAGER
 }
 
-/// User (Người dùng). Mật khẩu chỉ lưu dạng băm (NFR-03); email không trùng (FR-20).
-model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  fullName     String   @map("full_name")
-  role         UserRole @default(CUSTOMER)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  @@map("users")
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
 }
+
+enum StockHoldStatus {
+  HELD
+  COMMITTED
+  RELEASED
+}
+
+enum PaymentMethod {
+  WALLET
+  CARD
+}
+
+enum PaymentStatus {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+// ───────────── Catalog (Sprint 1) ─────────────
 
 /// Product (Đồ uống). availableQuantity = stockQuantity - reservedQuantity, tính ở API, không lưu cột.
 model Product {
@@ -43,6 +58,7 @@ model Product {
   reservedQuantity Int              @default(0) @map("reserved_quantity")
   sizes            ProductSize[]
   toppings         ProductTopping[]
+  orderItems       OrderItem[]
 
   @@map("products")
 }
@@ -53,17 +69,19 @@ model Size {
   name       String
   extraPrice Decimal       @map("extra_price") @db.Decimal(12, 2)
   products   ProductSize[]
+  orderItems OrderItem[]
 
   @@map("sizes")
 }
 
 /// Topping.
 model Topping {
-  id       String           @id @default(uuid()) @db.Uuid
-  name     String
-  price    Decimal          @db.Decimal(12, 2)
-  isActive Boolean          @default(true) @map("is_active")
-  products ProductTopping[]
+  id         String             @id @default(uuid()) @db.Uuid
+  name       String
+  price      Decimal            @db.Decimal(12, 2)
+  isActive   Boolean            @default(true) @map("is_active")
+  products   ProductTopping[]
+  orderItems OrderItemTopping[]
 
   @@map("toppings")
 }
@@ -89,3 +107,91 @@ model ProductTopping {
   @@id([productId, toppingId])
   @@map("product_toppings")
 }
+
+// ───────────── Users, Orders, Payments (Task 5) ─────────────
+
+/// User. Mật khẩu chỉ lưu bản băm (NFR-03). Email nên được chuẩn hóa chữ thường ở tầng ứng dụng trước khi lưu.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         UserRole @default(CUSTOMER)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  orders       Order[]
+
+  @@map("users")
+}
+
+/// Order. UNIQUE (user_id, request_id) chống tạo trùng đơn (FR-18).
+/// totalAmount do server tính từ giá tại thời điểm đặt (FR-06), không nhận từ client.
+model Order {
+  id              String          @id @default(uuid()) @db.Uuid
+  orderCode       String          @unique @map("order_code")
+  userId          String          @map("user_id") @db.Uuid
+  requestId       String          @map("request_id")
+  status          OrderStatus     @default(PENDING_PAYMENT)
+  stockHoldStatus StockHoldStatus @default(HELD) @map("stock_hold_status")
+  totalAmount     Decimal         @map("total_amount") @db.Decimal(12, 2)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+  payments        Payment[]
+
+  @@unique([userId, requestId])
+  @@index([status])
+  @@index([userId, createdAt])
+  @@map("orders")
+}
+
+/// OrderItem. unitPrice = giá gốc + phụ thu size + tổng topping tại thời điểm đặt; giá topping nằm ở OrderItemTopping.
+/// CHECK (quantity >= 1) thêm tay trong migration.
+model OrderItem {
+  id        String             @id @default(uuid()) @db.Uuid
+  orderId   String             @map("order_id") @db.Uuid
+  productId String             @map("product_id") @db.Uuid
+  sizeId    String?            @map("size_id") @db.Uuid
+  quantity  Int
+  sizePrice Decimal @map("size_price") @db.Decimal(12, 2)
+  lineTotal Decimal @map("line_total") @db.Decimal(12, 2)
+  unitPrice Decimal            @map("unit_price") @db.Decimal(12, 2)
+  order     Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  size      Size?              @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  toppings  OrderItemTopping[]
+
+  @@map("order_items")
+}
+
+/// OrderItemTopping. Lưu giá topping tại thời điểm đặt.
+model OrderItemTopping {
+  id String @id @default(uuid()) @db.Uuid
+  orderItemId String    @map("order_item_id") @db.Uuid
+  toppingId   String    @map("topping_id") @db.Uuid
+  price       Decimal   @db.Decimal(12, 2)
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  topping     Topping   @relation(fields: [toppingId], references: [id], onDelete: Restrict)
+
+  @@unique([orderItemId, toppingId])
+  @@map("order_item_toppings")
+}
+
+/// Payment. Mỗi lần thử thanh toán là một dòng. UNIQUE (order_id, idempotency_key) chống xử lý trùng (FR-15).
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  orderId        String        @map("order_id") @db.Uuid
+  idempotencyKey String        @map("idempotency_key")
+  method         PaymentMethod
+  status         PaymentStatus @default(PROCESSING)
+  amount         Decimal       @db.Decimal(12, 2)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  @@unique([orderId, idempotencyKey])
+  @@map("payments")
+}
+
