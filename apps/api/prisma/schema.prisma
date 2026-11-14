@@ -1,6 +1,7 @@
-// BrewLite Database – Prisma schema (Sprint 1: phần Catalog)
+// BrewLite Database – Prisma schema
 // Nguồn: Class Domain (docs/diagrams/class-domain.puml), backend-data-design §4, ADR-002.
-// Các bảng users, orders, order_items, order_item_toppings, payments thêm bằng migration mới ở Task 5.
+// Sprint 1: Catalog. Sprint 2: users (Task 5, nhánh feat/39-health-auth); orders, order_items,
+// order_item_toppings, payments thêm bằng migration riêng khi chốt schema đơn hàng với Đại.
 
 generator client {
   provider = "prisma-client-js"
@@ -9,6 +10,25 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/// Vai trò người dùng (Class Domain: UserRole).
+enum UserRole {
+  CUSTOMER
+  STAFF
+  MANAGER
+}
+
+/// User (Người dùng). Mật khẩu chỉ lưu dạng băm (NFR-03); email không trùng (FR-20).
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         UserRole @default(CUSTOMER)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("users")
 }
 
 /// Product (Đồ uống). availableQuantity = stockQuantity - reservedQuantity, tính ở API, không lưu cột.
