@@ -3,8 +3,9 @@ import { ProductDetailDto, ProductListItemDto } from './dto/product.dto';
 import { ProductsService } from './products.service';
 
 /**
- * Sprint 1: chưa yêu cầu đăng nhập (giới hạn tạm thời của MVP, Phân công Task 4 mục 3, 7).
- * Task 5 thêm guard JWT từ cookie; khi đó chưa đăng nhập trả 401 (FR-01, ADR-001).
+ * Cần đăng nhập (guard JWT toàn cục trong AuthModule): chưa đăng nhập hoặc JWT hết hạn trả 401
+ * và không trả danh sách đồ uống (FR-01, FR-12, ADR-001). Mọi vai trò đã đăng nhập đều xem được.
+ * Sprint 1 tạm mở menu; Task 5 bỏ giới hạn này.
  */
 @Controller('products')
 export class ProductsController {
