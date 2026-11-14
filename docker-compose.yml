@@ -17,7 +17,7 @@ services:
     environment:
       PORT: 3001
       DATABASE_URL: postgresql://brewlite:${POSTGRES_PASSWORD}@db:5432/brewlite
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.task5}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       COOKIE_SECURE: "false"
       LOG_LEVEL: info
     depends_on:

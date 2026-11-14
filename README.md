@@ -31,22 +31,31 @@ CI Sprint 1 thực hiện Install → Lint → Unit Test → Build. Theo Task 3,
 
 ## Chạy local bằng Docker
 
-Từ thư mục gốc của repo, tạo `.env` từ tệp mẫu.
-Nếu `.env` đã tồn tại, mở tệp và bổ sung các biến còn thiếu.
+Từ thư mục gốc của repo, nếu chưa có .env, sao chép .env.example bằng lệnh phù hợp với hệ điều hành. Nếu .env đã tồn tại, mở tệp và bổ sung các biến còn thiếu.
 
+**Windows PowerShell**
 ```powershell
 Copy-Item .env.example .env
 ```
+**macOS/Linux**
 
-Điền `POSTGRES_PASSWORD` và `JWT_SECRET` trong `.env`.
+```bash
+cp .env.example .env
+```
+
+Điền `POSTGRES_PASSWORD` và `JWT_SECRET` trong `.env`. `POSTGRES_PASSWORD` chỉ dùng chữ cái và chữ số vì Docker Compose chèn trực tiếp mật khẩu vào URL kết nối PostgreSQL.
 `JWT_SECRET` cần ít nhất 16 ký tự.
 Nếu dùng lại database Compose đã khởi tạo, dùng mật khẩu đã đặt trước đó.
 
 ```powershell
 docker compose up --build -d
+```
+Mở [http://localhost:3001/health](http://localhost:3001/health) để kiểm tra API. Đợi API trả HTTP `200 OK` với nội dung `{"status":"ok"}`, rồi chạy lệnh nạp dữ liệu mẫu.
+```
 docker compose exec api npx prisma db seed
 ```
 
+Sau khi seed thành công, mở [BrewLite Web](http://localhost:3000).
 Mở Web tại http://localhost:3000 và kiểm tra API tại
 http://localhost:3001/health. Chạy seed khi cần nạp dữ liệu mẫu
 cho database local.
