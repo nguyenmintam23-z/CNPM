@@ -104,6 +104,12 @@ Khóa các dòng `products` theo thứ tự `id` tăng dần để hai đơn đ�
 
 ## 6. Migration và seed
 
+Prisma áp dụng các migration trong `apps/api/prisma/migrations/` theo thứ tự sau.
+
+1. `20261113000000_init_catalog` — Tạo các bảng danh mục sản phẩm, size và topping.
+2. `20261113120000_add_users` — Tạo bảng `users` và enum `UserRole`.
+3. `20261114000000_add_orders_payments` — Tạo các bảng đơn hàng, dòng món, topping đã chọn và thanh toán. Migration dùng bảng `users` đã có và thêm ràng buộc `CHECK (quantity >= 1)` cho dòng món.
+
 | Nội dung | Mô tả | Nguồn |
 |---|---|---|
 | Cơ chế migration | Mỗi thay đổi schema là một file migration SQL, commit vào repo để có lịch sử rõ ràng | [Đề] mục 5.1; mục 1 "có lịch sử thay đổi rõ ràng" |

@@ -5,14 +5,19 @@
  *   (backend-data-design §6).
  * - Dùng id cố định và `upsert` với `update: {}`: chạy lại không tạo trùng
  *   và không ghi đè tồn kho đã có trong database.
- * - Tài khoản nhân viên và quản lý được thêm ở Task 5, khi có bảng `users`.
+ * - Task 5: thêm tài khoản nhân viên và quản lý (bảng `users`). Mật khẩu chỉ lưu dạng băm (NFR-03),
+ *   lấy từ biến môi trường SEED_STAFF_PASSWORD / SEED_MANAGER_PASSWORD. Ngoài production có mật khẩu
+ *   mặc định để chạy local; ở production bắt buộc đặt biến, không có thì seed dừng.
+ * - Khách hàng tự đăng ký (FR-20), không seed.
  *
  * Dữ liệu được chọn để thử các trạng thái trong `api-products.md` §6:
  * món còn hàng, món hết hàng (FR-01), món ngừng bán, món không ảnh, topping ngừng bán.
  */
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
+import { hash } from 'bcryptjs'; // PHẢI dùng cùng thư viện băm với AuthModule của Duy, nếu không đăng nhập sẽ lỗi.
 
 const prisma = new PrismaClient();
+const BCRYPT_ROUNDS = 10;
 
 const SIZE = {
   S: 'a1b2c3d4-0000-4000-8000-000000000001',
@@ -26,6 +31,20 @@ const TOPPING = {
   KEM_CHEESE: 'b1b2c3d4-0000-4000-8000-000000000003',
   PUDDING_NGUNG_BAN: 'b1b2c3d4-0000-4000-8000-000000000004',
 };
+
+const USER = {
+  STAFF: 'd1b2c3d4-0000-4000-8000-000000000001',
+  MANAGER: 'd1b2c3d4-0000-4000-8000-000000000002',
+};
+
+function seedPassword(envName: string, devDefault: string): string {
+  const value = process.env[envName];
+  if (value) return value;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`Thiếu biến môi trường ${envName} khi seed ở production.`);
+  }
+  return devDefault;
+}
 
 const sizes: Prisma.SizeCreateInput[] = [
   { id: SIZE.S, name: 'S', extraPrice: 0 },
@@ -115,6 +134,34 @@ const products: ProductSeed[] = [
   },
 ];
 
+async function seedUsers(): Promise<number> {
+  const users = [
+    {
+      id: USER.STAFF,
+      email: 'staff@brewlite.local',
+      fullName: 'Nhân viên quầy',
+      role: UserRole.STAFF,
+      password: seedPassword('SEED_STAFF_PASSWORD', 'Staff@12345'),
+    },
+    {
+      id: USER.MANAGER,
+      email: 'manager@brewlite.local',
+      fullName: 'Quản lý cửa hàng',
+      role: UserRole.MANAGER,
+      password: seedPassword('SEED_MANAGER_PASSWORD', 'Manager@12345'),
+    },
+  ];
+  for (const { password, ...user } of users) {
+    // update: {} để chạy lại không ghi đè mật khẩu đã đổi.
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: {},
+      create: { ...user, passwordHash: await hash(password, BCRYPT_ROUNDS) },
+    });
+  }
+  return users.length;
+}
+
 async function main(): Promise<void> {
   for (const size of sizes) {
     await prisma.size.upsert({ where: { id: size.id }, update: {}, create: size });
@@ -133,7 +180,10 @@ async function main(): Promise<void> {
       },
     });
   }
-  console.log(`Seed xong: ${products.length} món, ${sizes.length} size, ${toppings.length} topping.`);
+  const userCount = await seedUsers();
+  console.log(
+    `Seed xong: ${products.length} món, ${sizes.length} size, ${toppings.length} topping, ${userCount} tài khoản nội bộ.`,
+  );
 }
 
 main()
@@ -142,3 +192,4 @@ main()
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
+
