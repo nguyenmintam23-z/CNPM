@@ -19,8 +19,7 @@ export type ProductMenuProps = {
 };
 
 const heroPhoto =
-  "https://images.unsplash.com/photo-1671014594641-262cc4b9a16d?auto=format&fit=crop&w=1800&q=90";
-
+"/images/menu-coffee.jpg";
 function LeafMark({ className = "size-8" }: { className?: string }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 40 40" className={className} fill="none">

@@ -230,7 +230,7 @@ export function LoginForm({
           placeholder="Nhập mật khẩu"
           autoComplete="current-password"
         />
-        <div className="flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3 text-xs">
           <label className="flex items-center gap-2 font-semibold text-[#50634a]">
             <input
               name="remember"
@@ -239,9 +239,6 @@ export function LoginForm({
             />
             Ghi nhớ đăng nhập
           </label>
-          <span className="font-semibold text-[#6a7d60]" title="Tính năng đang được phát triển">
-            Quên mật khẩu <span className="font-medium text-[#87947d]">(sắp có)</span>
-          </span>
         </div>
         <SubmitButton isLoading={isLoading}>Đăng nhập</SubmitButton>
       </form>
