@@ -48,3 +48,44 @@ jobs:
       - name: Build
         if: steps.check-app.outputs.exists == 'true'
         run: npm run build
+  integration:
+    name: CI PostgreSQL integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: brewlite_test
+          POSTGRES_PASSWORD: ci_test_password
+          POSTGRES_DB: brewlite_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U brewlite_test -d brewlite_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://brewlite_test:ci_test_password@127.0.0.1:5432/brewlite_test
+      TEST_DATABASE_URL: postgresql://brewlite_test:ci_test_password@127.0.0.1:5432/brewlite_test
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npm run prisma:migrate:deploy
+
+      - name: Run PostgreSQL integration tests
+        run: npm run test:integration
