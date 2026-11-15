@@ -41,15 +41,3 @@
 | **NFR-07** | Giám sát & Kiểm tra sức khỏe hệ thống | **Sơ đồ:** `docs/architecture/c4-component-api.puml`, `docs/diagrams/deployment.puml`<br>**Kiến trúc:** BrewLite API (`GET /health`, JSON Logger) / Render<br>*Tài liệu:* `docs/architecture/backend-operations.md` (mục 3 logging, mục 4 health check), `docs/deployment.md`, `docs/architecture/adr/003-payment-and-operations.md` | `GET /health` (thiết kế Task 5) | *(Kiểm thử dự kiến ở Task 5)* |
 | **NFR-08** | **UC-01**: Đặt đơn; Hủy đơn chưa thanh toán | **Sơ đồ:** `docs/diagrams/sequence-checkout.puml`, `docs/diagrams/class-domain.svg`, `docs/architecture/c4-component-api.puml`<br>**Kiến trúc:** BrewLite API (`OrdersModule` – `requestId` & `stockHoldStatus`, `InventoryModule`, `PaymentModule` – `idempotencyKey`)<br>*Tài liệu:* `docs/requirements/use-case-checkout.md`, `docs/architecture/backend-data-design.md`, `docs/architecture/backend-operations.md`, `docs/architecture/adr/002-database-postgresql-prisma.md` | `POST /orders/checkout`, `POST /orders/{id}/payments` | *(Kiểm thử dự kiến ở Task 5)* |
 ---
-## Bổ sung Ma trận Truy vết cho 8 FR thiếu sót (Task 4)
-
-| Mã yêu cầu | Mô tả nguyên nhân thiếu sót | Vị trí cần bổ sung trong Ma trận Truy vết |
-| :--- | :--- | :--- |
-| **FR-12** | Yêu cầu đăng nhập lại khi JWT hết hạn, giữ giỏ hàng. | Bổ sung vào cột Code/API: `Auth Guard`, `POST /orders` (trả 401). |
-| **FR-13** | Xử lý lỗi giỏ trống, sai tùy chọn, hết hàng lúc đặt đơn. | Bổ sung vào cột Code/API: `class-validator` DTO của `POST /orders`. |
-| **FR-14** | Thanh toán thất bại, thử lại trên cùng mã đơn với khóa mới. | Bổ sung vào sơ đồ `Activity-01` (nhánh Thanh toán thất bại) và `Sequence-01`. |
-| **FR-15** | Chống thanh toán trùng (Idempotency) khi rớt mạng/gửi lại. | Bổ sung vào cột Test: `INT-T04 (Idempotency)`. |
-| **FR-16** | Ghi đơn hoặc giữ tồn kho lỗi -> Hoàn tác (Rollback). | Bổ sung vào cột Code/API: `Prisma Transaction`. |
-| **FR-17** | Kiểm tra quyền (Role) ở Backend, cập nhật trạng thái mới nhất. | Bổ sung vào cột Code/API: `Role Guard` cho API của Staff. |
-| **FR-18** | Chống tạo đơn trùng khi gửi lại yêu cầu tạo đơn. | Bổ sung vào cột Test: `INT-T05 (Order Idempotency)`. |
-| **FR-22** | Kiểm tra trường thông tin bắt buộc trước khi đặt hàng. | Bổ sung vào cột Code/API: `Frontend Form Validation`. |
