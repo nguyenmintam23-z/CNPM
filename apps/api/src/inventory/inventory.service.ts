@@ -77,4 +77,32 @@ export class InventoryService {
       await tx.product.update({ where: { id: productId }, data: { reservedQuantity: { increment: qty } } });
     }
   }
+
+  /**
+   * Thử thanh toán lại sau FAILED (tồn đã RELEASED): khóa products, kiểm tra còn đủ, giữ lại (FR-14, A2.4).
+   * Thiếu hàng → 409 kèm món thiếu, không giữ gì (UC-01 E5).
+   */
+  async rehold(tx: Prisma.TransactionClient, lines: { productId: string; quantity: number }[]): Promise<void> {
+    const locked = await this.lockProducts(tx, lines.map((l) => l.productId));
+    await this.hold(tx, lines, locked);
+  }
+
+  /** Thanh toán thành công: chốt tồn đã giữ, trừ cả stock và reserved (backend-data-design §5 "Áp dụng kết quả"). */
+  async commit(tx: Prisma.TransactionClient, lines: { productId: string; quantity: number }[]): Promise<void> {
+    await this.lockProducts(tx, lines.map((l) => l.productId));
+    for (const [productId, qty] of [...demandByProduct(lines)].sort(([a], [b]) => a.localeCompare(b))) {
+      await tx.product.update({
+        where: { id: productId },
+        data: { stockQuantity: { decrement: qty }, reservedQuantity: { decrement: qty } },
+      });
+    }
+  }
+
+  /** Thanh toán thất bại hoặc hủy đơn: giải phóng tồn đã giữ, chỉ giảm reserved (FR-14, FR-23). */
+  async release(tx: Prisma.TransactionClient, lines: { productId: string; quantity: number }[]): Promise<void> {
+    await this.lockProducts(tx, lines.map((l) => l.productId));
+    for (const [productId, qty] of [...demandByProduct(lines)].sort(([a], [b]) => a.localeCompare(b))) {
+      await tx.product.update({ where: { id: productId }, data: { reservedQuantity: { decrement: qty } } });
+    }
+  }
 }

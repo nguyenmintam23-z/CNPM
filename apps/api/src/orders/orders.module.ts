@@ -5,8 +5,8 @@ import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 /**
- * OrdersModule (backend-data-design §3): tạo đơn theo requestId. Lịch sử, chi tiết, hủy đơn,
- * hàng chờ nhân viên và tra cứu quản lý thêm ở các PR sau.
+ * OrdersModule (backend-data-design §3): tạo đơn theo requestId; lịch sử, chi tiết, hủy đơn của khách.
+ * Hàng chờ nhân viên và tra cứu quản lý thêm ở các PR sau.
  * Phụ thuộc CatalogModule (tính giá), InventoryModule (giữ tồn), PrismaModule (toàn cục).
  */
 @Module({
