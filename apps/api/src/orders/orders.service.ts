@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 import { CartLineInput, PricingService } from '../catalog/pricing.service';
@@ -6,9 +6,13 @@ import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export const MSG_REQUEST_ID_DA_DUNG = 'Mã yêu cầu đã dùng cho một đơn có nội dung khác';
+export const MSG_KHONG_TIM_THAY_DON = 'Không tìm thấy đơn hàng';
+export const MSG_KHONG_PHAI_CHU_DON = 'Không có quyền xem hoặc hủy đơn này';
+export const MSG_KHONG_HUY_DUOC = 'Đơn không còn ở trạng thái có thể hủy';
+export const MSG_DANG_THANH_TOAN = 'Đơn đang có một lần thanh toán đang xử lý, không hủy được';
 
 /** Đơn kèm dòng món, topping, tên món và size để trả cho khách (FR-06: hiển thị món, tùy chọn, số lượng, tổng tiền). */
-const ORDER_INCLUDE = {
+export const ORDER_INCLUDE = {
   items: {
     orderBy: { id: 'asc' },
     include: {
@@ -179,6 +183,69 @@ export class OrdersService {
       include: ORDER_INCLUDE,
     });
     return { order };
+  }
+
+  /** Lịch sử đơn của khách, mới nhất trước (FR-08). Chỉ đơn của chính người gọi; đơn đã hủy vẫn có trong lịch sử (FR-24). */
+  async list(userId: string, page: number, pageSize: number): Promise<{ items: OrderView[]; page: number; pageSize: number; total: number }> {
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.order.findMany({
+        where: { userId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: ORDER_INCLUDE,
+      }),
+      this.prisma.order.count({ where: { userId } }),
+    ]);
+    return { items: rows.map(toOrderView), page, pageSize, total };
+  }
+
+  /** Chi tiết một đơn (FR-08): 404 nếu không có; đơn của tài khoản khác bị từ chối 403, không trả chi tiết. */
+  async detail(userId: string, orderId: string): Promise<OrderView> {
+    const don = await this.prisma.order.findUnique({ where: { id: orderId }, include: ORDER_INCLUDE });
+    if (!don) throw new NotFoundException(MSG_KHONG_TIM_THAY_DON);
+    if (don.userId !== userId) throw new ForbiddenException(MSG_KHONG_PHAI_CHU_DON);
+    return toOrderView(don);
+  }
+
+  /**
+   * Hủy đơn chưa thanh toán (FR-23; NFR-08).
+   * Một transaction: khóa dòng đơn (cùng khóa với thanh toán, nên hai bên xếp hàng) → kiểm tra chủ đơn →
+   * đã CANCELLED thì trả lại đơn, không đổi gì (Đã hủy là trạng thái cuối, FR-24; trả 200 là [Đề xuất]) → chỉ hủy khi PENDING_PAYMENT và không có Payment PROCESSING →
+   * nếu tồn còn HELD thì giải phóng; nếu đã RELEASED (sau FAILED) thì không giải phóng lần nữa.
+   */
+  async cancel(userId: string, orderId: string): Promise<OrderView> {
+    const { order, daHuy } = await this.prisma.$transaction((tx) => this.cancelInTx(tx, userId, orderId));
+    if (daHuy) this.logger.log({ event: 'order_cancelled', orderId, userId });
+    return toOrderView(order);
+  }
+
+  private async cancelInTx(
+    tx: Prisma.TransactionClient, userId: string, orderId: string,
+  ): Promise<{ order: OrderWithItems; daHuy: boolean }> {
+    const [khoa] = await tx.$queryRaw<{ user_id: string }[]>`
+      SELECT user_id::text AS user_id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
+    if (!khoa) throw new NotFoundException(MSG_KHONG_TIM_THAY_DON);
+    if (khoa.user_id !== userId) throw new ForbiddenException(MSG_KHONG_PHAI_CHU_DON);
+
+    const don = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: ORDER_INCLUDE });
+    if (don.status === 'CANCELLED') return { order: don, daHuy: false };
+    if (don.status !== 'PENDING_PAYMENT') {
+      throw new ConflictException({ statusCode: 409, error: 'Conflict', message: MSG_KHONG_HUY_DUOC, code: 'ORDER_NOT_CANCELLABLE', orderStatus: don.status });
+    }
+    const dangXuLy = await tx.payment.findFirst({ where: { orderId, status: 'PROCESSING' } });
+    if (dangXuLy) {
+      throw new ConflictException({ statusCode: 409, error: 'Conflict', message: MSG_DANG_THANH_TOAN, code: 'PAYMENT_IN_PROGRESS' });
+    }
+    if (don.stockHoldStatus === 'HELD') {
+      await this.inventory.release(tx, don.items.map((i) => ({ productId: i.productId, quantity: i.quantity })));
+    }
+    const sau = await tx.order.update({
+      where: { id: orderId },
+      data: { status: 'CANCELLED', stockHoldStatus: 'RELEASED' },
+      include: ORDER_INCLUDE,
+    });
+    return { order: sau, daHuy: true };
   }
 
   private findByRequest(userId: string, requestId: string): Promise<OrderWithItems | null> {

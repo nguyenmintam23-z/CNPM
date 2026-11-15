@@ -14,7 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-/** Giới hạn chống dữ liệu bất thường [Đề xuất]; SRS chỉ yêu cầu số lượng ≥ 1 (FR-13 (1)). */
+/** Giới hạn chống dữ liệu bất thường, giỏ hàng web dùng cùng giới hạn [Nhóm chốt Duy và Phúc, 15/11/2026]; SRS chỉ yêu cầu số lượng ≥ 1 (FR-13 (1)). */
 export const MAX_DONG = 20;
 export const MAX_SO_LUONG = 20;
 export const MAX_TOPPING = 5;
