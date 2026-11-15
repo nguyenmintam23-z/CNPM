@@ -1,0 +1,48 @@
+.page { box-sizing: border-box; min-height: 100vh; width: 100%; background: linear-gradient(118deg, #fff9e9 0%, #fff2c7 100%); color: #173b20; padding: 38px 18px 72px; font-family: Arial, Helvetica, sans-serif; line-height: 1.55; }
+.page *, .page *::before, .page *::after { box-sizing: border-box; }
+.container { max-width: 1120px; margin: 0 auto; }
+.hero { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 32px; margin-bottom: 22px; border-radius: 25px; border: 1px solid #e5dfc4; background: linear-gradient(120deg, #fffdf4 0%, #f8eab7 100%); box-shadow: 0 12px 26px #4d4c2811; }
+.title { font-size: clamp(1.85rem, 4vw, 2.55rem); letter-spacing: -.035em; margin: 5px 0 10px; font-weight: 800; color: #173b20; }
+.eyebrow { font-weight: 800; font-size: 12px; letter-spacing: .14em; color: #244a16; margin: 0; }
+.muted { color: #4d6858; font-size: 14px; margin: 5px 0; }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.button, .secondaryButton, .dangerButton { appearance: none; cursor: pointer; border-radius: 11px; font: inherit; font-weight: 700; font-size: 14px; padding: 10px 16px; min-height: 42px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.button { border: 1px solid #244a16; background: #244a16; color: #fffdf2; }
+.secondaryButton { border: 1px solid #b8c8a5; background: #fffdf4; color: #244a16; }
+.dangerButton { border: 1px solid #a33332; background: #fff6f4; color: #9e2929; }
+.button:hover:not(:disabled) { background: #173b20; }
+.secondaryButton:hover:not(:disabled) { background: #edf4df; }
+.dangerButton:hover:not(:disabled) { background: #ffe6e0; }
+.button:disabled, .secondaryButton:disabled, .dangerButton:disabled { opacity: .45; cursor: not-allowed; }
+.button:focus-visible, .secondaryButton:focus-visible, .dangerButton:focus-visible, .link:focus-visible, .back a:focus-visible { outline: 3px solid #658d47; outline-offset: 3px; }
+.panel { border: 1px solid #e2dfca; background: #fffaf0; border-radius: 22px; box-shadow: 0 7px 24px #2b481710; margin-bottom: 22px; padding: 26px; }
+.panelHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.sectionTitle { margin: 0; font-size: clamp(1.18rem, 2.6vw, 1.5rem); color: #173b20; font-weight: 800; }
+.message, .empty { padding: 18px 0; }
+.tableScroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; min-width: 620px; font-size: 14px; }
+.table th { text-align: left; font-weight: 800; color: #21451c; background: #e9f0dd; font-size: 12px; }
+.table th, .table td { padding: 14px 12px; border-bottom: 1px solid #e9e5d6; }
+.table tbody tr:hover { background: #f5f8ed; }
+.right { text-align: right !important; white-space: nowrap; }
+.code { font-weight: 800; white-space: nowrap; color: #173b20; }
+.chip { display: inline-block; padding: 5px 11px; border-radius: 999px; background: #e9f1e0; color: #244a16; border: 1px solid #d2e2c5; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.link, .back a { color: #244a16; font-weight: 800; text-underline-offset: 3px; }
+.pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 20px; font-weight: 700; }
+.back { padding: 0 0 14px; }
+.infoGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.label { color: #4d6858; font-size: 13px; margin: 0 0 4px; }
+.value { font-size: 16px; font-weight: 700; margin: 0; }
+.bigValue { font-size: 24px; font-weight: 800; margin: 0; }
+.cancelArea { margin-top: 23px; border-top: 1px solid #e3dfcc; padding-top: 18px; display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.items { padding: 0; margin: 0; list-style: none; }
+.item { padding: 14px 0; border-top: 1px solid #eae5d5; display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.item strong:last-child { white-space: nowrap; }
+@media (max-width: 700px) {
+  .page { padding: 16px 12px 40px; }
+  .hero { flex-direction: column; align-items: stretch; padding: 21px; }
+  .panel { padding: 19px 15px; }
+  .actions { justify-content: start; }
+  .infoGrid { grid-template-columns: 1fr; }
+  .pagination { flex-wrap: wrap; }
+}

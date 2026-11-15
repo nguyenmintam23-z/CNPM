@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 // Mirrors apps/api/api-products.md response; never use Figma mock data.
 export type Product = {
@@ -79,6 +80,7 @@ function ProductCard({ product }: { product: Product }) {
     ? product.imageUrl : null;
 
   return (
+    <a href={`/products/${encodeURIComponent(product.id)}`} aria-label={`Xem chi tiết ${product.name}`} className="block rounded-[26px] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#A8BF8370]">
     <article className="group overflow-hidden rounded-[26px] border border-[#e8e2cf] bg-[#fffdf7] shadow-[0_8px_24px_rgba(36,74,22,0.055)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(36,74,22,0.12)]">
       <div className="relative aspect-[1.28/1] overflow-hidden bg-[#eaeedc]">
         {image ? (
@@ -105,6 +107,7 @@ function ProductCard({ product }: { product: Product }) {
         </div>
       </div>
     </article>
+    </a>
   );
 }
 
@@ -180,17 +183,29 @@ export default function ProductMenu({
     <main id="top" className="min-h-screen bg-[#FFF1C7] text-[#173B20]">
       <header className="relative z-10 border-b border-[#e5dfc7] bg-[#FFF9E9]/90">
         <nav
-          className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-7 lg:px-10"
+          className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-7 lg:px-10"
           aria-label="Điều hướng chính"
         >
           <Brand />
-          <div className="flex items-center gap-4 sm:gap-7">
+          <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-3 sm:w-auto sm:gap-x-7">
             <a
               href="#menu"
               className="text-sm font-semibold text-[#34542a] transition hover:text-[#173B20]"
             >
               Thực đơn
             </a>
+            <a
+              href="/cart"
+              className="text-sm font-semibold text-[#34542a] transition hover:text-[#173B20]"
+            >
+              Giỏ hàng
+            </a>
+            <Link
+              href="/orders"
+              className="text-sm font-semibold text-[#34542a] transition hover:text-[#173B20] focus:outline-none focus-visible:rounded focus-visible:ring-4 focus-visible:ring-[#a8bf8370]"
+            >
+              Đơn hàng của tôi
+            </Link>
             {onLogout && (
               <button
                 type="button"

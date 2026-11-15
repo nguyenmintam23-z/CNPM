@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Giữ nguyên các thiết lập hiện có của BrewLite.
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
+        // Không thêm `as: "*.css"` tại đây.
+        // Turbopack cần giữ nguyên đuôi .module.css để tạo map tên class.
       },
     },
   },

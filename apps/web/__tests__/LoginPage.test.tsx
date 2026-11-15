@@ -7,8 +7,8 @@ jest.mock("../components/auth/AuthShell", () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-
 const fetchMock = jest.fn();
+
 beforeEach(() => {
   jest.clearAllMocks();
   Object.defineProperty(global, "fetch", { value: fetchMock, writable: true, configurable: true });
@@ -16,9 +16,23 @@ beforeEach(() => {
 });
 
 function fillLogin() {
-  fireEvent.change(screen.getByRole("textbox", { name: "Địa chỉ email" }), { target: { value: "user@example.com" } });
-  fireEvent.change(screen.getByLabelText("Mật khẩu"), { target: { value: "secret123" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "Địa chỉ email" }), {
+    target: { value: "user@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText("Mật khẩu"), {
+    target: { value: "secret123" },
+  });
   fireEvent.click(screen.getByRole("button", { name: /^Đăng nhập$/ }));
+}
+
+function mockSuccessfulLogin(role: string) {
+  fetchMock
+    .mockResolvedValueOnce({ ok: true, status: 200 })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: { id: "test-user" }, role }),
+    });
 }
 
 test("hiển thị form đăng nhập và liên kết đăng ký", () => {
@@ -28,10 +42,8 @@ test("hiển thị form đăng nhập và liên kết đăng ký", () => {
   expect(mockRouter.push).toHaveBeenCalledWith("/register");
 });
 
-test("đăng nhập đúng: gọi login, xác minh /me rồi chuyển về menu", async () => {
-  fetchMock
-    .mockResolvedValueOnce({ ok: true, status: 200 })
-    .mockResolvedValueOnce({ ok: true, status: 200 });
+test("CUSTOMER đăng nhập: gọi login, xác minh /me rồi chuyển về menu", async () => {
+  mockSuccessfulLogin("CUSTOMER");
   render(<LoginPage />);
   fillLogin();
   await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
@@ -43,8 +55,34 @@ test("đăng nhập đúng: gọi login, xác minh /me rồi chuyển về menu"
   expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/auth/me", expect.objectContaining({ method: "GET" }));
 });
 
+test("MANAGER đăng nhập bình thường: chuyển đến giao diện quản lý FR-11", async () => {
+  mockSuccessfulLogin("MANAGER");
+  render(<LoginPage />);
+  fillLogin();
+  await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/manager/orders"));
+});
+
+test("MANAGER có next nội bộ hợp lệ: ưu tiên đường dẫn next", async () => {
+  window.history.replaceState({}, "", "/login?next=%2Fmanager%2Forders%3Fstatus%3DCONFIRMED");
+  mockSuccessfulLogin("MANAGER");
+  render(<LoginPage />);
+  fillLogin();
+  await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/manager/orders?status=CONFIRMED"));
+});
+
+test("next chuyển sang website ngoài bị bỏ qua", async () => {
+  window.history.replaceState({}, "", "/login?next=%2F%2Fevil.example");
+  mockSuccessfulLogin("MANAGER");
+  render(<LoginPage />);
+  fillLogin();
+  await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/manager/orders"));
+});
+
 test("sai thông tin đăng nhập: báo lỗi và không chuyển trang", async () => {
-  fetchMock.mockResolvedValue({ ok: false, status: 401, json: async () => ({ message: "Email hoặc mật khẩu không đúng" }) });
+  fetchMock.mockResolvedValue({
+    ok: false, status: 401,
+    json: async () => ({ message: "Email hoặc mật khẩu không đúng" }),
+  });
   render(<LoginPage />);
   fillLogin();
   expect(await screen.findByRole("alert")).toHaveTextContent("Email hoặc mật khẩu không đúng");
@@ -52,7 +90,9 @@ test("sai thông tin đăng nhập: báo lỗi và không chuyển trang", async
 });
 
 test("login thành công nhưng /me trả 401: không cho truy cập menu", async () => {
-  fetchMock.mockResolvedValueOnce({ ok: true, status: 200 }).mockResolvedValueOnce({ ok: false, status: 401 });
+  fetchMock
+    .mockResolvedValueOnce({ ok: true, status: 200 })
+    .mockResolvedValueOnce({ ok: false, status: 401 });
   render(<LoginPage />);
   fillLogin();
   expect(await screen.findByRole("alert")).toHaveTextContent(/chưa xác minh được phiên/);
