@@ -194,7 +194,7 @@ export default function CartPage() {
               <h2 className="text-xl font-bold">Tổng kết giỏ hàng</h2>
               <div className="mt-4 flex justify-between gap-4 border-b border-[#eeeadb] pb-4 font-bold"><span>Tạm tính</span><span className="text-[#244A16]">{formatVnd(cartTotal(items))}</span></div>
               <p className="mt-4 text-xs leading-5 text-[#61705b]">Giá và tồn kho sẽ được Backend xác nhận lại khi tạo đơn.</p>
-              <button type="button" disabled className="mt-5 w-full cursor-not-allowed rounded-xl bg-[#244A16] px-4 py-3 font-semibold text-white opacity-50">Tiếp tục đặt đơn (sắp có)</button>
+              <Link href="/checkout" className="mt-5 block w-full rounded-xl bg-[#244A16] px-4 py-3 text-center font-semibold text-white hover:bg-[#173B20]">Tiếp tục đặt đơn</Link>
             </aside>
           </div>
         )}
