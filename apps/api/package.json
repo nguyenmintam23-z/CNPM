@@ -4,7 +4,8 @@
   "private": true,
   "description": "BrewLite API (NestJS): sản phẩm, xác thực JWT, health check",
   "scripts": {
-    "test:integration": "jest --config ../../tests/integration/jest.config.cjs --runInBand",
+   "test:integration": "jest --config ../../tests/integration/jest.config.cjs --runInBand",
+   "start:prod:seed": "npm run prisma:migrate:deploy && npx prisma db seed && exec node dist/main",
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "nest start",
