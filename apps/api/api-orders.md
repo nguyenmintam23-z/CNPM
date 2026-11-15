@@ -32,7 +32,7 @@ Chỉ tài khoản `CUSTOMER`. Body chỉ có **lựa chọn**, không có giá:
 | `toppingIds` | Tùy chọn, tối đa 5, không lặp, phải thuộc món và đang bán. |
 | `quantity` | Số nguyên 1–20 cho mỗi dòng. |
 
-Giới hạn 20 dòng, 20 ly mỗi dòng, 5 topping là **[Đề xuất]** để chặn dữ liệu bất thường; SRS chỉ yêu cầu số lượng ≥ 1.
+Giới hạn 20 dòng, 20 ly mỗi dòng, 5 topping để chặn dữ liệu bất thường; SRS chỉ yêu cầu số lượng ≥ 1. Giỏ hàng của BrewLite Web dùng cùng giới hạn. **[Nhóm chốt]** Duy và Phúc, 15/11/2026.
 
 ## 2. Giá
 
