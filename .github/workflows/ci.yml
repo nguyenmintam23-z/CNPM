@@ -1,6 +1,9 @@
 name: BrewLite CI
 
 on:
+  push:
+    branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -49,6 +52,9 @@ jobs:
         if: steps.check-app.outputs.exists == 'true'
         run: npm run build
   integration:
+  push:
+    branches: [main]
+    tags: ['v*']
     name: CI PostgreSQL integration
     runs-on: ubuntu-latest
 
@@ -89,3 +95,38 @@ jobs:
 
       - name: Run PostgreSQL integration tests
         run: npm run test:integration
+
+  docker:
+    name: Build Docker images
+    needs: [quality, integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker build --tag "brewlite-api:$GITHUB_SHA" apps/api
+          docker build --tag "brewlite-web:$GITHUB_SHA" apps/web
+
+  deploy:
+    name: Deploy and smoke test on Render
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    concurrency:
+      group: brew-lite-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify release commit is on main
+        run: git merge-base --is-ancestor HEAD origin/main
+      - name: Deploy API and Web
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_API_SERVICE_ID: ${{ vars.RENDER_API_SERVICE_ID }}
+          RENDER_WEB_SERVICE_ID: ${{ vars.RENDER_WEB_SERVICE_ID }}
+          API_URL: ${{ vars.API_URL }}
+          WEB_URL: ${{ vars.WEB_URL }}
+        run: bash scripts/deploy-render.sh
