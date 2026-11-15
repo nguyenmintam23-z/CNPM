@@ -67,6 +67,10 @@ Sau khi seed thành công, mở [BrewLite Web](http://localhost:3000).
 
 ## Production trên Render
 
+- [BrewLite Web](https://brewlite-web-q4yi.onrender.com)
+- [BrewLite API](https://brewlite-api-15lu.onrender.com)
+- Kiểm tra hoạt động qua [Web `/healthz`](https://brewlite-web-q4yi.onrender.com/healthz) và [API `/health`](https://brewlite-api-15lu.onrender.com/health).
+
 GitHub Actions chạy lint, test, build và kiểm thử PostgreSQL khi mở PR vào `main`, push lên `main` hoặc push tag `v*`. Sau khi các kiểm tra đạt, CI build hai Docker image gắn với commit SHA. Tag phiên bản trên `main` kích hoạt triển khai. Render build lại hai image từ đúng commit đã kiểm tra bằng Dockerfile của từng dịch vụ.
 
 Trong Render, liên kết hai Docker Web Service với repo, đặt thư mục gốc lần lượt là `apps/api` và `apps/web`, rồi tắt Auto-Deploy để GitHub Actions điều phối phát hành. Đặt health check API là `/health` và Web là `/healthz`. API dùng `DATABASE_URL` nội bộ và `JWT_SECRET` lưu trong Render, giữ mặc định cookie Secure trên HTTPS. Web dùng `API_UPSTREAM_URL` trỏ tới URL HTTPS của API. Trong phần Networking của Render Postgres, tắt truy cập từ bên ngoài và xác nhận API vẫn kết nối qua internal URL.
