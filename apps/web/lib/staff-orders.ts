@@ -63,10 +63,10 @@ export function nextStaffStatus(status: string): StaffNextStatus | null {
 
 export function staffStatusLabel(status: string): string {
   switch (status) {
-    case "CONFIRMED": return "Chờ pha chế";
-    case "PREPARING": return "Đang pha chế";
+    case "CONFIRMED": return "Đã xác nhận";
+    case "PREPARING": return "Đang chuẩn bị";
     case "READY": return "Sẵn sàng nhận";
-    case "COMPLETED": return "Đã hoàn tất";
+    case "COMPLETED": return "Hoàn tất";
     default: return status;
   }
 }

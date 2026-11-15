@@ -36,12 +36,21 @@ describe("Tiện ích giao diện nhân viên BrewLite", () => {
     expect(nextStaffStatus("COMPLETED")).toBeNull();
   });
 
-  test("hiển thị nhãn và xác định đơn còn trong hàng chờ", () => {
-    expect(staffStatusLabel("CONFIRMED")).toBe("Chờ pha chế");
-    expect(staffActionLabel("READY")).toBe("Hoàn tất đơn");
-    expect(isActiveStaffStatus("PREPARING")).toBe(true);
-    expect(isActiveStaffStatus("COMPLETED")).toBe(false);
-  });
+ 
+test("hiển thị nhãn và xác định đơn còn trong hàng chờ", () => {
+  expect(staffStatusLabel("CONFIRMED")).toBe("Đã xác nhận");
+  expect(staffStatusLabel("PREPARING")).toBe("Đang chuẩn bị");
+  expect(staffStatusLabel("READY")).toBe("Sẵn sàng nhận");
+  expect(staffStatusLabel("COMPLETED")).toBe("Hoàn tất");
+
+  expect(staffActionLabel("READY")).toBe("Hoàn tất đơn");
+
+  expect(isActiveStaffStatus("CONFIRMED")).toBe(true);
+  expect(isActiveStaffStatus("PREPARING")).toBe(true);
+  expect(isActiveStaffStatus("READY")).toBe(true);
+  expect(isActiveStaffStatus("COMPLETED")).toBe(false);
+});
+
 
   test("xác định quyền nhân viên từ phiên đăng nhập", () => {
     expect(staffRoleFromSession({ user: { id: "123" }, role: "STAFF" })).toBe("STAFF");

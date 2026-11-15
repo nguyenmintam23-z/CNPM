@@ -21,9 +21,9 @@ type QueueFilter = StaffActiveStatus | "ALL";
 
 const FILTERS: { value: QueueFilter; label: string }[] = [
   { value: "ALL", label: "Tất cả" },
-  { value: "CONFIRMED", label: "Chờ pha chế" },
-  { value: "PREPARING", label: "Đang pha chế" },
-  { value: "READY", label: "Sẵn sàng" },
+  { value: "CONFIRMED", label: "Đã xác nhận" },
+  { value: "PREPARING", label: "Đang chuẩn bị" },
+  { value: "READY", label: "Sẵn sàng nhận" },
 ];
 
 export default function StaffOrders() {
@@ -131,7 +131,7 @@ export default function StaffOrders() {
         return;
       }
       if (response.status === 409) {
-        setNotice("Đơn đã được nhân viên khác cập nhật. Danh sách đã được yêu cầu tải lại.");
+        setNotice("Trạng thái đơn đã thay đổi. Đang tải lại danh sách.");
         setReload((value) => value + 1);
         return;
       }
@@ -225,8 +225,8 @@ export default function StaffOrders() {
 
         <div className="mt-7 grid gap-3 sm:grid-cols-3">
           {([
-            ["CONFIRMED", "Chờ pha chế"],
-            ["PREPARING", "Đang pha chế"],
+            ["CONFIRMED", "Đã xác nhận"],
+            ["PREPARING", "Đang chuẩn bị"],
             ["READY", "Sẵn sàng nhận"],
           ] as const).map(([status, title]) => (
             <div key={status} className="rounded-2xl border border-[#e8e2cf] bg-[#FFFCF5] p-5 shadow-sm">

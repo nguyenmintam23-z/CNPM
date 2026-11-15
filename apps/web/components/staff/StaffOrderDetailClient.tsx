@@ -114,8 +114,20 @@ export default function StaffOrderDetailClient() {
         return;
       }
       if (response.status === 409) {
-        setNotice("Trạng thái đã được nhân viên khác thay đổi. Đang tải lại đơn mới nhất.");
-        setReload((value) => value + 1);
+        // API trả về trạng thái mới nhất trong body 409, kể cả khi đơn đã hoàn tất
+        // và không còn xuất hiện trong endpoint hàng chờ.
+        const conflictOrder =
+          payload && typeof payload === "object" && "order" in payload
+            ? (payload as { order: unknown }).order
+            : null;
+        if (isStaffOrder(conflictOrder)) {
+          setOrder(conflictOrder);
+          setPhase("ready");
+          setNotice("Trạng thái đơn đã thay đổi. Đã hiển thị thông tin mới nhất.");
+        } else {
+          setNotice("Trạng thái đơn đã thay đổi. Đang tải lại đơn.");
+          setReload((value) => value + 1);
+        }
         return;
       }
       if (!response.ok) {
@@ -123,7 +135,7 @@ export default function StaffOrderDetailClient() {
         return;
       }
       if (!isStaffOrder(payload)) {
-        setNotice("Backend đã phản hồi thành công. Đang tải lại trạng thái đơn.");
+        setNotice("Đang tải lại đơn.");
         setReload((value) => value + 1);
         return;
       }
