@@ -1,0 +1,12 @@
+{
+  "name": "brewlite-e2e",
+  "private": true,
+  "description": "E2E BrewLite Web: menu → tùy chọn → giỏ → đặt đơn → thanh toán → xác nhận (đề 7.2, NFR-05)",
+  "scripts": {
+    "test": "playwright test",
+    "install:browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
