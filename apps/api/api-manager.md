@@ -35,7 +35,9 @@ Response `200`:
 }
 ```
 
-Mỗi đơn cùng cấu trúc như `api-orders.md` §3, thêm `latestPaymentStatus`: trạng thái lần thanh toán gần nhất (`PROCESSING`, `SUCCEEDED`, `FAILED`), `null` khi chưa thanh toán lần nào. Dùng để đánh dấu đơn có lần thanh toán thất bại ngay trong danh sách. **[Đề xuất]**
+Mỗi đơn cùng cấu trúc như `api-orders.md` §3, thêm `latestPaymentStatus`: trạng thái **lần thanh toán gần nhất** (`PROCESSING`, `SUCCEEDED`, `FAILED`), `null` khi chưa thanh toán lần nào. **[Đề xuất]**
+
+Trường này chỉ phản ánh lần gần nhất. Ví dụ đơn thất bại lần đầu rồi thử lại thành công có `latestPaymentStatus = SUCCEEDED`; lần `FAILED` vẫn xem được trong chi tiết (mục 3). Nếu nhóm muốn đánh dấu mọi đơn từng có lần thanh toán thất bại, cần thêm một trường riêng (ví dụ `hasFailedPayment`); hiện chưa có.
 
 `400` khi `status` không phải trạng thái đơn, hoặc `page`/`pageSize` sai.
 
@@ -57,6 +59,6 @@ Mỗi đơn cùng cấu trúc như `api-orders.md` §3, thêm `latestPaymentStat
 ## 4. Gợi ý cho BrewLite Web
 
 - Bộ lọc trạng thái dùng tên trong SRS: Chờ thanh toán, Đã xác nhận, Đang chuẩn bị, Sẵn sàng nhận, Hoàn tất, Đã hủy; "Tất cả" thì không gửi `status`.
-- Đơn có `latestPaymentStatus = FAILED` nên có nhãn "Thanh toán thất bại" trong danh sách.
+- Đơn có `latestPaymentStatus = FAILED` hiện nhãn "Lần thanh toán gần nhất thất bại" (không ghi "Thanh toán thất bại", vì đơn có thể đã thử lại thành công ở lần sau).
 - Chi tiết hiện bảng các lần thanh toán: phương thức, trạng thái, số tiền, thời điểm, lý do thất bại.
 - FR-11 là **Should**: làm sau màn hình khách và nhân viên.
