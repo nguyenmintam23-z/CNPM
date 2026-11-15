@@ -15,6 +15,8 @@ import {
   type ManagerStatus,
 } from "../../lib/manager-orders";
 import styles from "./ManagerOrders.module.css";
+import ManagerHeaderActions from "./ManagerHeaderActions";
+
 const PAGE_SIZE = 20;
 type Access = "checking" | "allowed" | "denied" | "error";
 
@@ -129,9 +131,10 @@ export default function ManagerOrders() {
           <h1 className={styles.title}>Quản lý đơn hàng</h1>
           <p className={styles.muted}>Tra cứu đơn hàng, trạng thái và lịch sử thanh toán. Chỉ xem.</p>
         </div>
-        <button className={styles.button} disabled={loading} onClick={() => setRefresh(n => n + 1)}>
-          Làm mới
-        </button>
+        <ManagerHeaderActions
+          refreshDisabled={loading}
+          onRefresh={() => setRefresh(n => n + 1)}
+        />
       </div>
 
       <section className={styles.panel} aria-label="Danh sách đơn hàng">

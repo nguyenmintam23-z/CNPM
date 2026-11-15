@@ -15,6 +15,7 @@ import {
   type ManagerOrderDetail as Detail,
 } from "../../lib/manager-orders";
 import styles from "./ManagerOrders.module.css";
+import ManagerHeaderActions from "./ManagerHeaderActions";
 
 type ViewState = "loading" | "ready" | "denied" | "error";
 
@@ -80,8 +81,10 @@ export default function ManagerOrderDetail() {
           <p className={styles.eyebrow}>BREWLITE · MANAGER</p>
           <h1 className={styles.title}>Chi tiết đơn hàng</h1>
         </div>
-        {state === "ready" && (
-          <button className={styles.button} onClick={() => setRefresh(n => n + 1)}>Làm mới</button>
+        {(state === "ready" || state === "error") && (
+          <ManagerHeaderActions
+            onRefresh={() => setRefresh(n => n + 1)}
+          />
         )}
       </div>
       {state === "loading" && <p className={styles.message} role="status">Đang tải chi tiết đơn…</p>}
