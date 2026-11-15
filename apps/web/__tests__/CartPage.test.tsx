@@ -80,12 +80,11 @@ test("không lộ giỏ tài khoản khác", async () => {
   expect(await screen.findByRole("heading", { name: "Giỏ hàng đang trống" })).toBeInTheDocument();
 });
 
-test("không cho thanh toán khi tính năng checkout chưa đưa vào PR này", async () => {
+test("có đường dẫn sang trang checkout khi giỏ có món", async () => {
   seed(); mockFetch.mockResolvedValue(sessionResponse);
   render(<CartPage />);
   expect(await screen.findByRole("heading", { name: "Tổng kết giỏ hàng" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /Tiếp tục đặt đơn/ })).toBeDisabled();
-  expect(screen.queryByText(/Duy cung cấp/)).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Tiếp tục đặt đơn" })).toHaveAttribute("href", "/checkout");
 });
 
 test("hiển thị thông báo khi thêm thành công", async () => {
