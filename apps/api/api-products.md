@@ -27,7 +27,7 @@ Chỉ trả món đang kinh doanh (`isActive = true`). Món hết hàng **vẫn 
     "id": "6f1c2a3e-8b4d-4c1a-9e2f-1a2b3c4d5e6f",
     "name": "Cà phê sữa",
     "basePrice": 29000,
-    "imageUrl": "https://example.com/ca-phe-sua.jpg",
+    "imageUrl": "/images/products/ca-phe-sua.jpg",
     "availableQuantity": 20
   },
   {
@@ -45,7 +45,7 @@ Chỉ trả món đang kinh doanh (`isActive = true`). Món hết hàng **vẫn 
 | `id` | string (UUID) | | [Task trước] Class Domain |
 | `name` | string | | [Task trước] FR-01 |
 | `basePrice` | number | Giá gốc, đơn vị VND, số nguyên | [Task trước] FR-01; [Nhóm chốt] kiểu number và VND |
-| `imageUrl` | string \| null | `null` khi món không có ảnh | [Task trước] FR-01 "hiển thị ảnh nếu có" |
+| `imageUrl` | string \| null | Đường dẫn ảnh trong BrewLite Web, ví dụ `/images/products/ca-phe-sua.jpg` (ảnh nằm ở `apps/web/public/images/products/`); `null` khi món không có ảnh | [Task trước] FR-01 "hiển thị ảnh nếu có"; đường dẫn là [Nhóm chốt] Duy và Phúc, 15/11/2026 |
 | `availableQuantity` | number | `stockQuantity − reservedQuantity`, API tự tính, không lưu trong DB. Bằng 0 thì hiện nhãn hết hàng | [Task trước] Class Domain, FR-01 |
 
 - Menu trống thì trả `200` với `[]`, Web hiện trạng thái empty. **[Đề]** 6.3; **[Task trước]** NFR-05
@@ -61,7 +61,7 @@ Chỉ trả món đang kinh doanh (`isActive = true`). Món hết hàng **vẫn 
   "name": "Cà phê sữa",
   "description": "Cà phê phin pha sữa đặc",
   "basePrice": 29000,
-  "imageUrl": "https://example.com/ca-phe-sua.jpg",
+  "imageUrl": "/images/products/ca-phe-sua.jpg",
   "availableQuantity": 20,
   "sizes": [
     { "id": "a1b2c3d4-0000-4000-8000-000000000001", "name": "S", "extraPrice": 0 },
@@ -114,7 +114,7 @@ Seed nằm ở `apps/api/prisma/seed.ts`. **[Đề]** 6.3 "dữ liệu mẫu ho�
 | Vài món còn hàng, có size và topping | Thử trạng thái có dữ liệu |
 | 1 món `stockQuantity = 0` | Thử nhãn hết hàng (FR-01) |
 | 1 món `isActive = false` | Kiểm tra món này không có trong danh sách (FR-01) và trả 404 khi gọi chi tiết |
-| 1 món không có ảnh | Thử `imageUrl = null` |
+| 1 món không có ảnh (Nước suối) | Thử `imageUrl = null` |
 | 1 topping `isActive = false` | Kiểm tra topping này không hiện trong chi tiết |
 
 Thử trạng thái empty: chạy API với database chưa seed. Thử trạng thái error: tắt API. **[Đề xuất]**

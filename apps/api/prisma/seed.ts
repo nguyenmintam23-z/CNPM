@@ -3,8 +3,8 @@
  *
  * - Chạy riêng bằng `npm run db:seed`, KHÔNG chạy trong lệnh start hay mỗi lần deploy
  *   (backend-data-design §6).
- * - Dùng id cố định và `upsert` với `update: {}`: chạy lại không tạo trùng
- *   và không ghi đè tồn kho đã có trong database.
+ * - Dùng id cố định và `upsert`: chạy lại không tạo trùng và không ghi đè tồn kho đã có trong database.
+ *   Riêng món: chạy lại thì cập nhật `imageUrl` để database đã seed trước đó nhận ảnh mới.
  * - Task 5: thêm tài khoản nhân viên và quản lý (bảng `users`). Mật khẩu chỉ lưu dạng băm (NFR-03),
  *   lấy từ biến môi trường SEED_STAFF_PASSWORD / SEED_MANAGER_PASSWORD. Ngoài production có mật khẩu
  *   mặc định để chạy local; ở production bắt buộc đặt biến, không có thì seed dừng.
@@ -72,7 +72,7 @@ const products: ProductSeed[] = [
     name: 'Cà phê sữa',
     description: 'Cà phê phin pha sữa đặc',
     basePrice: 29000,
-    imageUrl: 'https://placehold.co/400x400?text=Ca+phe+sua',
+    imageUrl: '/images/products/ca-phe-sua.jpg',
     stockQuantity: 50,
     sizeIds: [SIZE.S, SIZE.M, SIZE.L],
     toppingIds: [TOPPING.KEM_CHEESE],
@@ -82,7 +82,7 @@ const products: ProductSeed[] = [
     name: 'Trà sữa trân châu',
     description: 'Trà đen pha sữa, kèm trân châu đường đen',
     basePrice: 35000,
-    imageUrl: 'https://placehold.co/400x400?text=Tra+sua',
+    imageUrl: '/images/products/tra-sua-tran-chau.jpg',
     stockQuantity: 40,
     sizeIds: [SIZE.M, SIZE.L],
     toppingIds: [TOPPING.TRAN_CHAU, TOPPING.THACH_DUA, TOPPING.KEM_CHEESE, TOPPING.PUDDING_NGUNG_BAN],
@@ -93,24 +93,23 @@ const products: ProductSeed[] = [
     name: 'Trà đào cam sả',
     description: 'Trà đào, cam tươi và sả',
     basePrice: 39000,
-    imageUrl: 'https://placehold.co/400x400?text=Tra+dao',
+    imageUrl: '/images/products/tra-dao-cam-sa.jpg',
     stockQuantity: 0,
     sizeIds: [SIZE.M, SIZE.L],
     toppingIds: [TOPPING.THACH_DUA],
   },
   {
-    // Món không có ảnh: imageUrl = null.
     id: 'c1b2c3d4-0000-4000-8000-000000000004',
     name: 'Bạc xỉu',
     description: 'Sữa nóng thêm một chút cà phê',
     basePrice: 32000,
-    imageUrl: null,
+    imageUrl: '/images/products/bac-xiu.jpg',
     stockQuantity: 30,
     sizeIds: [SIZE.S, SIZE.M],
     toppingIds: [],
   },
   {
-    // Món không có size, topping: sizes = [], toppings = [].
+    // Món không có size, topping và không có ảnh: sizes = [], toppings = [], imageUrl = null (FR-01 "ảnh nếu có").
     id: 'c1b2c3d4-0000-4000-8000-000000000005',
     name: 'Nước suối',
     description: 'Chai 500 ml',
@@ -172,7 +171,8 @@ async function main(): Promise<void> {
   for (const { sizeIds, toppingIds, ...product } of products) {
     await prisma.product.upsert({
       where: { id: product.id },
-      update: {},
+      // Chỉ cập nhật ảnh khi chạy lại; không đụng tồn kho, giá đã có trong database.
+      update: { imageUrl: product.imageUrl },
       create: {
         ...product,
         sizes: { create: sizeIds.map((sizeId) => ({ size: { connect: { id: sizeId } } })) },
