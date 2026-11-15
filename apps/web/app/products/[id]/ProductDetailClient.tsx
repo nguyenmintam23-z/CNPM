@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { addCartItem, readCart, saveCart, MAX_QUANTITY } from "../../../lib/cart";
+import { addCartItem, readCart, saveCart, MAX_QUANTITY, MAX_TOPPINGS, CART_ADDED_NOTICE_KEY, userIdFromSession } from "../../../lib/cart";
 import { formatVnd, isProductDetail, type ProductDetail } from "../../../lib/product";
 
 type PageState = "loading" | "ready" | "not-found" | "error";
@@ -17,6 +17,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
   const [quantity, setQuantity] = useState(1);
   const [retry, setRetry] = useState(0);
   const [notice, setNotice] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -25,6 +26,13 @@ export default function ProductDetailClient({ id }: { id: string }) {
       setNotice("");
       setProduct(null);
       try {
+        const me = await fetch("/api/auth/me", { method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal });
+        if (controller.signal.aborted) return;
+        if (me.status === 401) { router.replace(`/login?next=${encodeURIComponent(`/products/${id}`)}`); return; }
+        if (!me.ok) { setState("error"); return; }
+        const identity = userIdFromSession(await me.json().catch(() => null));
+        if (!identity) { setState("error"); return; }
+        setUserId(identity);
         const response = await fetch(`/api/products/${encodeURIComponent(id)}`, {
           method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
         });
@@ -59,14 +67,20 @@ export default function ProductDetailClient({ id }: { id: string }) {
     chosenToppings.reduce((sum, topping) => sum + topping.price, 0);
 
   function toggleTopping(idToToggle: string) {
-    setToppingIds((current) => current.includes(idToToggle)
-      ? current.filter((toppingId) => toppingId !== idToToggle)
-      : [...current, idToToggle]);
+    if (toppingIds.includes(idToToggle)) {
+      setToppingIds(toppingIds.filter((value) => value !== idToToggle));
+      setNotice("");
+    } else if (toppingIds.length >= MAX_TOPPINGS) {
+      setNotice(`Bạn chỉ được chọn tối đa ${MAX_TOPPINGS} topping.`);
+    } else {
+      setToppingIds([...toppingIds, idToToggle]);
+      setNotice("");
+    }
   }
 
   function addToCart() {
-    if (!product || product.availableQuantity <= 0) return;
-    const result = addCartItem(readCart(), {
+    if (!product || product.availableQuantity <= 0 || !userId) return;
+    const result = addCartItem(readCart(userId), {
       productId: product.id,
       productName: product.name,
       imageUrl: product.imageUrl,
@@ -79,7 +93,9 @@ export default function ProductDetailClient({ id }: { id: string }) {
       availableQuantity: product.availableQuantity,
     });
     if (result.error) { setNotice(result.error); return; }
-    if (!saveCart(result.items)) { setNotice("Không thể lưu giỏ hàng trên trình duyệt này."); return; }
+    if (!saveCart(result.items, userId)) { setNotice("Không thể lưu giỏ hàng trên trình duyệt này."); return; }
+    setNotice("Đã thêm món vào giỏ hàng.");
+    try { window.sessionStorage.setItem(CART_ADDED_NOTICE_KEY, "Đã thêm món vào giỏ hàng."); } catch { /* Không lưu được thông báo không ảnh hưởng món đã thêm. */ }
     router.push("/cart");
   }
 
@@ -165,7 +181,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
               <div className="flex items-center justify-between gap-3 text-lg font-bold"><span>Tạm tính</span><span className="text-[#244A16]">{formatVnd(unit * quantity)}</span></div>
               <p className="mt-2 text-xs leading-5 text-[#65725a]">Giá và tồn kho cuối cùng sẽ do Backend kiểm tra khi đặt đơn.</p>
               {notice && <p role="alert" className="mt-3 text-sm font-semibold text-[#a33f2c]">{notice}</p>}
-              <button type="button" disabled={!available} onClick={addToCart} className="mt-5 w-full rounded-2xl bg-[#244A16] px-5 py-3.5 font-bold text-white hover:bg-[#173B20] disabled:cursor-not-allowed disabled:opacity-45">Thêm vào giỏ hàng</button>
+              <button type="button" disabled={!available || !userId} onClick={addToCart} className="mt-5 w-full rounded-2xl bg-[#244A16] px-5 py-3.5 font-bold text-white hover:bg-[#173B20] disabled:cursor-not-allowed disabled:opacity-45">Thêm vào giỏ hàng</button>
             </div>
           </div>
         </div>

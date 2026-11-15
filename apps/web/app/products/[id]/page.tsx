@@ -7,22 +7,16 @@ type PageProps = {
 
 async function ProductDetailContent({ params }: PageProps) {
   const { id } = await params;
-
   return <ProductDetailClient id={id} />;
 }
 
 export default function Page({ params }: PageProps) {
   return (
-    <Suspense
-      fallback={
-        <main
-          role="status"
-          className="grid min-h-screen place-items-center bg-[#FFF9E9] text-[#244A16]"
-        >
-          Đang tải chi tiết sản phẩm...
-        </main>
-      }
-    >
+    <Suspense fallback={
+      <main role="status" className="grid min-h-screen place-items-center bg-[#FFF9E9] text-[#244A16]">
+        Đang tải chi tiết sản phẩm...
+      </main>
+    }>
       <ProductDetailContent params={params} />
     </Suspense>
   );
