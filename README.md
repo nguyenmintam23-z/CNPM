@@ -64,3 +64,30 @@ docker compose exec -e 'SEED_STAFF_PASSWORD=ThayMatKhauStaffLocal' -e 'SEED_MANA
 ```
 
 Sau khi seed thành công, mở [BrewLite Web](http://localhost:3000).
+
+## Production trên Render
+
+GitHub Actions chạy lint, test, build và kiểm thử PostgreSQL khi mở PR vào `main`, push lên `main` hoặc push tag `v*`. Sau khi các kiểm tra đạt, CI build hai Docker image gắn với commit SHA. Tag phiên bản trên `main` kích hoạt triển khai. Render build lại hai image từ đúng commit đã kiểm tra bằng Dockerfile của từng dịch vụ.
+
+Trong Render, liên kết hai Docker Web Service với repo, đặt thư mục gốc lần lượt là `apps/api` và `apps/web`, rồi tắt Auto-Deploy để GitHub Actions điều phối phát hành. Đặt health check API là `/health` và Web là `/healthz`. API dùng `DATABASE_URL` nội bộ và `JWT_SECRET` lưu trong Render, giữ mặc định cookie Secure trên HTTPS. Web dùng `API_UPSTREAM_URL` trỏ tới URL HTTPS của API. Trong phần Networking của Render Postgres, tắt truy cập từ bên ngoài và xác nhận API vẫn kết nối qua internal URL.
+
+Tạo GitHub Actions environment `production` với secret `RENDER_API_KEY` và các variables `RENDER_API_SERVICE_ID`, `RENDER_WEB_SERVICE_ID`, `API_URL`, `WEB_URL`. URL production sẽ được điền ở đây sau khi xác nhận địa chỉ Web và API trên Render.
+
+Sau khi workflow đã merge và cấu hình production đã sẵn sàng, tạo tag trên bản `main` đã kiểm tra. Ví dụ với phiên bản đầu tiên:
+
+```bash
+git switch main
+git pull --ff-only origin main
+git tag -a v0.1.0 -m "BrewLite v0.1.0"
+git push origin v0.1.0
+```
+
+Workflow đợi từng deploy lên trạng thái live, kiểm tra API và Web trả HTTP 200. Khi workflow xanh, tạo GitHub Release từ tag và đính kèm release notes cùng Hoàng. Lưu link workflow run, kết quả health check và xác nhận từ người ngoài nhóm đã clone, chạy theo README và mở được production.
+
+### Rollback production trên Render
+
+Workflow ghi lại deploy đang live của API và Web trước khi phát hành. Nếu phát hành lỗi, workflow yêu cầu Render khôi phục các service đã chuyển sang deploy mới, theo thứ tự Web rồi API, và kiểm tra lại health. Lần phát hành vẫn báo lỗi để nhóm kiểm tra.
+
+Nếu deploy hết thời gian chờ, chưa có bản live trước đó hoặc Render báo rollback lỗi, vào **Render → service → Deploys**. Dừng deploy lỗi nếu nó vẫn đang chạy, chọn bản thành công trước đó rồi bấm **Rollback** nếu bản đó còn khả dụng. Kiểm tra lại API `/health` và Web `/healthz` trả HTTP 200 và lưu link lần chạy.
+
+Rollback trên Render khôi phục phiên bản ứng dụng. Migration đã áp dụng vào PostgreSQL cần xử lý riêng. Giữ migration tương thích với phiên bản trước và kiểm tra dữ liệu trước khi thao tác khôi phục database.
