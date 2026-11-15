@@ -83,3 +83,11 @@ git push origin v0.1.0
 ```
 
 Workflow đợi từng deploy lên trạng thái live, kiểm tra API và Web trả HTTP 200. Khi workflow xanh, tạo GitHub Release từ tag và đính kèm release notes cùng Hoàng. Lưu link workflow run, kết quả health check và xác nhận từ người ngoài nhóm đã clone, chạy theo README và mở được production.
+
+### Rollback production trên Render
+
+Workflow ghi lại deploy đang live của API và Web trước khi phát hành. Nếu phát hành lỗi, workflow yêu cầu Render khôi phục các service đã chuyển sang deploy mới, theo thứ tự Web rồi API, và kiểm tra lại health. Lần phát hành vẫn báo lỗi để nhóm kiểm tra.
+
+Nếu deploy hết thời gian chờ, chưa có bản live trước đó hoặc Render báo rollback lỗi, vào **Render → service → Deploys**. Dừng deploy lỗi nếu nó vẫn đang chạy, chọn bản thành công trước đó rồi bấm **Rollback** nếu bản đó còn khả dụng. Kiểm tra lại API `/health` và Web `/healthz` trả HTTP 200 và lưu link lần chạy.
+
+Rollback trên Render khôi phục phiên bản ứng dụng. Migration đã áp dụng vào PostgreSQL cần xử lý riêng. Giữ migration tương thích với phiên bản trước và kiểm tra dữ liệu trước khi thao tác khôi phục database.

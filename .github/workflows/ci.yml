@@ -52,9 +52,6 @@ jobs:
         if: steps.check-app.outputs.exists == 'true'
         run: npm run build
   integration:
-  push:
-    branches: [main]
-    tags: ['v*']
     name: CI PostgreSQL integration
     runs-on: ubuntu-latest
 
@@ -111,7 +108,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: [docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 75
     environment: production
     concurrency:
       group: brew-lite-production
