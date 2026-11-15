@@ -79,6 +79,7 @@ function ProductCard({ product }: { product: Product }) {
     ? product.imageUrl : null;
 
   return (
+    <a href={`/products/${encodeURIComponent(product.id)}`} aria-label={`Xem chi tiết ${product.name}`} className="block rounded-[26px] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#A8BF8370]">
     <article className="group overflow-hidden rounded-[26px] border border-[#e8e2cf] bg-[#fffdf7] shadow-[0_8px_24px_rgba(36,74,22,0.055)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(36,74,22,0.12)]">
       <div className="relative aspect-[1.28/1] overflow-hidden bg-[#eaeedc]">
         {image ? (
@@ -105,6 +106,7 @@ function ProductCard({ product }: { product: Product }) {
         </div>
       </div>
     </article>
+    </a>
   );
 }
 
@@ -190,6 +192,12 @@ export default function ProductMenu({
               className="text-sm font-semibold text-[#34542a] transition hover:text-[#173B20]"
             >
               Thực đơn
+            </a>
+            <a
+              href="/cart"
+              className="text-sm font-semibold text-[#34542a] transition hover:text-[#173B20]"
+            >
+              Giỏ hàng
             </a>
             {onLogout && (
               <button
