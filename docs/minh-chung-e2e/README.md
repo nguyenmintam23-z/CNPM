@@ -53,13 +53,13 @@ Mỗi lần chạy mất thêm khoảng 5–8 phút. Job chưa phải check bắ
 
 ## Chạy lại
 
-Dùng project Compose riêng để không đụng database dev (giống `docs/minh-chung-p95`):
+Dùng project Compose riêng để không đụng database dev (giống `docs/minh-chung-p95`). Trước tiên đặt hai biến môi trường `SEED_STAFF_PASSWORD`, `SEED_MANAGER_PASSWORD` bằng mật khẩu tự chọn cho database thử; lệnh seed lấy giá trị từ shell, không ghi mật khẩu vào repo.
 
 ```bash
 docker compose stop
 docker compose -p brewlite-e2e down -v
 docker compose -p brewlite-e2e up --build -d
-docker compose -p brewlite-e2e exec -e SEED_STAFF_PASSWORD='Staff@12345' -e SEED_MANAGER_PASSWORD='Manager@12345' api npx prisma db seed
+docker compose -p brewlite-e2e exec -e SEED_STAFF_PASSWORD -e SEED_MANAGER_PASSWORD api npx prisma db seed
 cd tests/e2e
 npm ci
 npx playwright install chromium

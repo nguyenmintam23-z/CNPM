@@ -3,7 +3,7 @@
 //
 //   node tests/smoke/minh-chung-api.mjs --out docs/minh-chung-api/ket-qua.md
 //
-// Biến môi trường: API_BASE_URL (mặc định http://localhost:3001), SEED_STAFF_PASSWORD, SEED_MANAGER_PASSWORD
+// Biến môi trường: API_BASE_URL (mặc định http://localhost:3001); bắt buộc SEED_STAFF_PASSWORD, SEED_MANAGER_PASSWORD
 // (mật khẩu đã dùng khi seed). Chỉ dùng Node 18+, không cài thêm gói.
 // Không ghi JWT hay mật khẩu vào kết quả: cookie chỉ giữ tên và thuộc tính.
 
@@ -18,8 +18,13 @@ const opt = (name, def) => {
 };
 const BASE = opt('base', process.env.API_BASE_URL ?? 'http://localhost:3001').replace(/\/$/, '');
 const OUT = opt('out', null);
-const STAFF_PW = process.env.SEED_STAFF_PASSWORD ?? 'Staff@12345';
-const MANAGER_PW = process.env.SEED_MANAGER_PASSWORD ?? 'Manager@12345';
+// Mật khẩu tài khoản nội bộ phải trùng giá trị đã dùng khi seed; không ghi sẵn mật khẩu trong mã nguồn.
+const STAFF_PW = process.env.SEED_STAFF_PASSWORD;
+const MANAGER_PW = process.env.SEED_MANAGER_PASSWORD;
+if (!STAFF_PW || !MANAGER_PW) {
+  console.error('Dừng: đặt SEED_STAFF_PASSWORD và SEED_MANAGER_PASSWORD bằng mật khẩu đã dùng khi seed.');
+  process.exit(2);
+}
 const CHO_CHAM_MS = Number(process.env.PAYMENT_SIM_DELAY_MS ?? 5000) + 500;
 
 // Id món trong prisma/seed.ts
