@@ -8,6 +8,7 @@ NestJS + Prisma + PostgreSQL.
 | Xác thực, health check (Task 5) | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /health` | [`api-auth.md`](api-auth.md) |
 | Tạo đơn, thanh toán (Task 5) | `POST /orders/checkout`, `POST /orders/{id}/payments` | [`api-orders.md`](api-orders.md) |
 | Xử lý đơn tại quầy (Task 5) | `GET /staff/orders`, `GET /staff/orders/{id}`, `PATCH /staff/orders/{id}/status` | [`api-staff.md`](api-staff.md) |
+| Tra cứu đơn cho quản lý (Task 5) | `GET /manager/orders`, `GET /manager/orders/{id}` | [`api-manager.md`](api-manager.md) |
 
 ## Trạng thái Task 5
 
@@ -17,6 +18,7 @@ NestJS + Prisma + PostgreSQL.
 - Log JSON ra stdout/stderr (NFR-07, backend-operations §3); mức log theo `LOG_LEVEL`.
 - Thanh toán: `PaymentsService` tạo Payment `PROCESSING` trong một transaction, gọi `PaymentService` (mô phỏng Ví/Thẻ) ngoài transaction, áp dụng kết quả đúng một lần; thử lại sau thất bại giữ lại tồn (`api-orders.md` §6).
 - Nhân viên quầy: hàng chờ gồm đơn `CONFIRMED`, `PREPARING`, `READY`; cập nhật tiến độ từng bước, ghi có điều kiện theo trạng thái cũ nên hai nhân viên cùng bấm chỉ một yêu cầu được ghi (`api-staff.md`).
+- Quản lý: tra cứu mọi đơn, lọc theo trạng thái; chi tiết có các lần thanh toán và lý do thất bại (`api-manager.md`). Chỉ đọc.
 
 ## Thanh toán mô phỏng (`src/payment`)
 

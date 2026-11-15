@@ -47,15 +47,20 @@ cp .env.example .env
 `JWT_SECRET` cần ít nhất 16 ký tự.
 Nếu dùng lại database Compose đã khởi tạo, dùng mật khẩu đã đặt trước đó.
 
+Container API chạy với `NODE_ENV=production`, nên lệnh seed cần hai biến
+`SEED_STAFF_PASSWORD` và `SEED_MANAGER_PASSWORD`. Khi chạy lệnh, thay các giá trị
+mẫu bên dưới bằng mật khẩu dành riêng cho tài khoản nhân viên và quản lý trên máy local.
+
+**Windows PowerShell**
+
 ```powershell
-docker compose up --build -d
+docker compose exec -e "SEED_STAFF_PASSWORD=ThayMatKhauStaffLocal" -e "SEED_MANAGER_PASSWORD=ThayMatKhauManagerLocal" api npx prisma db seed
 ```
-Mở [http://localhost:3001/health](http://localhost:3001/health) để kiểm tra API. Đợi API trả HTTP `200 OK` với nội dung `{"status":"ok"}`, rồi chạy lệnh nạp dữ liệu mẫu.
-```
-docker compose exec api npx prisma db seed
+
+**macOS/Linux**
+
+```bash
+docker compose exec -e 'SEED_STAFF_PASSWORD=ThayMatKhauStaffLocal' -e 'SEED_MANAGER_PASSWORD=ThayMatKhauManagerLocal' api npx prisma db seed    
 ```
 
 Sau khi seed thành công, mở [BrewLite Web](http://localhost:3000).
-Mở Web tại http://localhost:3000 và kiểm tra API tại
-http://localhost:3001/health. Chạy seed khi cần nạp dữ liệu mẫu
-cho database local.
