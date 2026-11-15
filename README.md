@@ -70,7 +70,7 @@ Sau khi seed thành công, mở [BrewLite Web](http://localhost:3000).
 - [BrewLite Web](https://brewlite-web-q4yi.onrender.com)
 - [BrewLite API](https://brewlite-api-15lu.onrender.com)
 - Kiểm tra hoạt động qua [Web `/healthz`](https://brewlite-web-q4yi.onrender.com/healthz) và [API `/health`](https://brewlite-api-15lu.onrender.com/health).
-- [GitHub Release v0.1.1](https://github.com/nguyenmintam23-z/CNPM/releases/tag/v0.1.1) | [GitHub Release v0.1.0](https://github.com/nguyenmintam23-z/CNPM/releases/tag/v0.1.0) | [Releases](https://github.com/nguyenmintam23-z/CNPM/releases)
+- [GitHub Release v0.1.1](https://github.com/nguyenmintam23-z/CNPM/releases/tag/v0.1.1) | [Releases](https://github.com/nguyenmintam23-z/CNPM/releases)
 
 GitHub Actions chạy lint, test, build và kiểm thử PostgreSQL khi mở PR vào `main`, push lên `main` hoặc push tag `v*`. Sau khi các kiểm tra đạt, CI build hai Docker image gắn với commit SHA. Tag phiên bản trên `main` kích hoạt triển khai. Render build lại hai image từ đúng commit đã kiểm tra bằng Dockerfile của từng dịch vụ.
 
@@ -118,5 +118,5 @@ Rollback trên Render khôi phục phiên bản ứng dụng. Migration đã áp
 ### Tài liệu bàn giao Sprint 2
 
 - [Video demo checkout BrewLite](https://drive.google.com/file/d/14ENn9XkYZKsI86F3nA4lHf-1_9_bIO9G/view?usp=sharing)
-- [Release notes v0.1.0](https://github.com/nguyenmintam23-z/CNPM/releases/tag/v0.1.0)
+- [Release notes v0.1.0](docs/release-notes-v0.1.0.md)
 - [Sprint Review](docs/sprint-2-review.md) và [Sprint Retrospective](docs/sprint-2-retrospective.md)
