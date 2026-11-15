@@ -24,7 +24,7 @@ Lần đo chạy trong một project Compose riêng tên `brewlite-p95`, có vol
    docker compose -p brewlite-p95 exec -e SEED_STAFF_PASSWORD='Staff@12345' -e SEED_MANAGER_PASSWORD='Manager@12345' api npx prisma db seed
    ```
 
-   Container `api` chạy với `NODE_ENV=production`, nên seed bắt buộc có hai biến mật khẩu này (`prisma/seed.ts`). Hai giá trị trên chỉ là mẫu cho database đo, có thể đổi. Lệnh seed trong `README.md` ở thư mục gốc chưa có hai biến; khi README gốc được cập nhật thì làm theo README gốc.
+   Container `api` chạy với `NODE_ENV=production`, nên seed bắt buộc có hai biến mật khẩu này (`prisma/seed.ts`). Hai giá trị trên chỉ là mẫu cho database đo, có thể đổi. Cách seed giống `README.md` ở thư mục gốc (đã thêm hai biến này ở PR #69), chỉ khác là có `-p brewlite-p95`.
 
 3. Đo và ghi kết quả:
 
