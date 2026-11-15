@@ -47,9 +47,10 @@ Tạo đơn và thanh toán làm giảm tồn kho. Một database seed mới đ�
 
 ## Kết quả
 
-| Lần đo | Môi trường | Kết quả |
-|---|---|---|
-| [Chạy thử ngoài Docker](chay-thu-ngoai-docker.md), 15/11/2026 | API chạy bằng `node`, PostgreSQL trên máy; **chưa đạt điều kiện "chạy bằng docker-compose"** | 4/4 API đạt, p95 lớn nhất 11,1 ms |
-| [Docker Compose](ket-qua-docker-compose.md), 15/11/2026 | `docker compose` từ database trống, dữ liệu seed, `main` commit `e446383` | **4/4 API đạt**, p95 lớn nhất 44,1 ms (thanh toán) |
+| Lần đo | Người đo | Môi trường | Kết quả |
+|---|---|---|---|
+| [`docs/nfr01-results.json`](../nfr01-results.json), 15/11/2026 (PR #66) | Tâm | Docker Compose, dữ liệu seed, bản ghép PR #58 và #59 (chưa có lịch sử, hủy đơn, API nhân viên) | 4/4 API đạt; p95: `GET /products` 4,7 ms, `GET /products/:id` 5,8 ms, tạo đơn 16,9 ms, thanh toán 19,1 ms (8 lần `202`) |
+| [Docker Compose](ket-qua-docker-compose.md), 15/11/2026 (PR #67) | Duy | `docker compose` từ database trống, dữ liệu seed, `main` commit `e446383` (đã có các API của Task 5), đo bằng `tests/perf/do-p95.mjs` | 4/4 API đạt; p95: 6,7 ms, 9,3 ms, 29,9 ms, 44,1 ms (10 lần `202`) |
+| [Chạy thử ngoài Docker](chay-thu-ngoai-docker.md), 15/11/2026 | Duy | API chạy bằng `node`, PostgreSQL trên máy; **chưa đạt điều kiện "chạy bằng docker-compose"** | 4/4 API đạt; chỉ để kiểm tra script |
 
-Kết quả dùng làm minh chứng NFR-01 là lần đo bằng Docker Compose. Lần chạy thử ngoài Docker chỉ để kiểm tra script.
+Hai lần đo bằng Docker Compose đều đạt NFR-01. Lần đo của Tâm (PR #66) có đủ 400 mẫu trong file JSON. Lần đo của Duy (PR #67) bổ sung script chạy lại được và đo trên mã nguồn mới hơn; số mili giây giữa hai lần khác nhau vì đo ở hai thời điểm trên hai bản mã nguồn khác nhau; cả hai đều cách xa ngưỡng 500 ms. Khi kiểm lại sau này, chạy script theo mục "Cách đo" ở trên.
