@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import PaymentPanel from "../../components/payment/PaymentPanel";
 import { useRouter } from "next/navigation";
 import { cartTotal, unitPrice, useCartItems, userIdFromSession } from "../../lib/cart";
 import { formatVnd } from "../../lib/product";
@@ -140,6 +141,18 @@ export default function CheckoutPage() {
     }
   }
 
+  function onOrderUpdated(status: string, stockHoldStatus?: string) {
+    if (!userId || !order) return;
+    const nextOrder = {
+      ...order,
+      status,
+      stockHoldStatus: stockHoldStatus ?? order.stockHoldStatus,
+    };
+    const saved = { fingerprint, order: nextOrder } satisfies SavedOrder;
+    saveCheckoutRecord(checkoutStorageKey(userId, "order"), saved);
+    setStoredOrder({ ...saved, userId });
+  }
+
   if (session === "checking") return (
     <main role="status" className="grid min-h-screen place-items-center bg-[#FFF9E9] text-[#244A16]">Đang kiểm tra phiên đăng nhập...</main>
   );
@@ -159,7 +172,7 @@ export default function CheckoutPage() {
         <h1 className="mt-6 font-display text-3xl font-bold sm:text-4xl">{order ? "Đã tạo đơn hàng" : "Xác nhận đặt đơn"}</h1>
         {order ? (
           <section className="mt-7 rounded-3xl border border-[#e8e2cf] bg-[#fffdf7] p-6 shadow-sm sm:p-8" aria-label="Đơn hàng đã tạo">
-            <p className="font-semibold text-[#4f6d38]">Đã tạo đơn – đang chờ thanh toán</p>
+            <p className="font-semibold text-[#4f6d38]">{order.status === "CONFIRMED" ? "Thanh toán thành công – đã xác nhận đơn" : "Đã tạo đơn – đang chờ thanh toán"}</p>
             <h2 className="mt-2 text-2xl font-bold">Mã đơn: {order.orderCode}</h2>
             <p className="mt-2 text-sm text-[#61705b]">Trạng thái: {order.status} · Giữ hàng: {order.stockHoldStatus}</p>
             <div className="mt-6 space-y-3 border-y border-[#e8e2cf] py-5">
@@ -173,12 +186,11 @@ export default function CheckoutPage() {
               ))}
             </div>
             <div className="mt-5 flex justify-between gap-3 text-xl font-bold"><span>Tổng tiền Backend xác nhận</span><span>{formatVnd(order.totalAmount)}</span></div>
-            <h3 className="mt-8 text-lg font-bold">Thanh toán mô phỏng (sắp tích hợp)</h3>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-[#cbd6b5] bg-[#f1f4e8] p-4">Ví điện tử</div>
-              <div className="rounded-xl border border-[#cbd6b5] bg-[#f1f4e8] p-4">Thẻ</div>
-            </div>
-            <p className="mt-4 text-sm text-[#61705b]">Đơn chưa thanh toán. Không gọi thanh toán hoặc hiển thị kết quả thành công giả.</p>
+            <PaymentPanel
+              order={order}
+              userId={userId ?? ""}
+              onOrderUpdated={onOrderUpdated}
+            />
             {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
           </section>
         ) : items.length === 0 ? (
