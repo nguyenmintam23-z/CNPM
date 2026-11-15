@@ -47,15 +47,22 @@ function phanVi(dsMs, p) {
   return s[Math.max(0, Math.ceil((p / 100) * s.length) - 1)];
 }
 
-function tomTat(ten, ds) {
+/**
+ * Một API đạt khi: đủ SO_LAN mẫu, p95 < 500 ms và mọi mẫu có mã HTTP mong đợi
+ * (200 danh sách, chi tiết; 201 tạo đơn; 200 hoặc 202 thanh toán).
+ */
+function tomTat(ten, ds, maMongDoi) {
   const ms = ds.map((d) => d.ms);
   const s = [...ms].sort((a, b) => a - b);
   const maTra = {};
   for (const d of ds) maTra[d.status] = (maTra[d.status] ?? 0) + 1;
+  const duMau = ds.length === SO_LAN;
+  const dungMa = ds.every((d) => maMongDoi.includes(d.status));
+  const p95 = ds.length ? phanVi(ms, 95) : NaN;
   return {
     ten, soLan: ds.length,
-    min: s[0], trungVi: phanVi(ms, 50), p95: phanVi(ms, 95), max: s[s.length - 1],
-    dat: phanVi(ms, 95) < NGUONG_MS, maTra,
+    min: s[0] ?? NaN, trungVi: ds.length ? phanVi(ms, 50) : NaN, p95, max: s[s.length - 1] ?? NaN,
+    duMau, dungMa, dat: duMau && dungMa && p95 < NGUONG_MS, maTra, maMongDoi,
   };
 }
 
@@ -125,17 +132,19 @@ for (const orderId of donDaTao) {
 
 // ---------- Báo cáo ----------
 const bang = [
-  tomTat('GET /products', ketQua.list),
-  tomTat('GET /products/:id', ketQua.detail),
-  tomTat('POST /orders/checkout', ketQua.checkout),
-  tomTat('POST /orders/{id}/payments', ketQua.payment),
+  tomTat('GET /products', ketQua.list, [200]),
+  tomTat('GET /products/:id', ketQua.detail, [200]),
+  tomTat('POST /orders/checkout', ketQua.checkout, [201]),
+  tomTat('POST /orders/{id}/payments', ketQua.payment, [200, 202]),
 ];
-const loiHttp = bang.some((b) => Object.keys(b.maTra).some((m) => Number(m) >= 300 && !(b.ten.includes('payments') && m === '202')));
-const datHet = bang.every((b) => b.dat && b.soLan === SO_LAN) && !loiHttp;
+const datHet = bang.every((b) => b.dat);
+const chayThu = SO_LAN !== 100; // NFR-01 yêu cầu đúng 100 lần gọi
+const lyDo = (b) => [!b.duMau && `thiếu mẫu (${b.soLan}/${SO_LAN})`, !b.dungMa && `có mã HTTP ngoài ${b.maMongDoi.join('/')}`, !(b.p95 < NGUONG_MS) && 'p95 ≥ 500 ms']
+  .filter(Boolean).join('; ');
 const f = (x) => x.toFixed(1);
 
 const dong = [
-  `# Kết quả đo p95 (NFR-01)`,
+  chayThu ? `# Chạy thử đo p95 với ${SO_LAN} lần gọi (không phải minh chứng NFR-01)` : `# Kết quả đo p95 (NFR-01)`,
   ``,
   `- Thời điểm: ${new Date().toISOString()}`,
   `- API: ${BASE}`,
@@ -143,13 +152,13 @@ const dong = [
   `- Mỗi API gọi ${SO_LAN} lần liên tiếp (gọi xong lần trước mới gửi lần sau), không có lượt khởi động bỏ qua. Thời gian tính từ lúc gửi request tới lúc đọc hết body, đo ở máy gọi.`,
   `- p95 tính theo nearest-rank: giá trị thứ ceil(0,95 × n) sau khi sắp tăng dần. Ngưỡng: p95 < ${NGUONG_MS} ms.`,
   ``,
-  `| API | Số lần | Min (ms) | Trung vị (ms) | p95 (ms) | Max (ms) | Mã HTTP | Đạt |`,
+  `| API | Số lần | Min (ms) | Trung vị (ms) | p95 (ms) | Max (ms) | Mã HTTP (mong đợi) | Đạt |`,
   `|---|---|---|---|---|---|---|---|`,
-  ...bang.map((b) => `| \`${b.ten}\` | ${b.soLan} | ${f(b.min)} | ${f(b.trungVi)} | ${f(b.p95)} | ${f(b.max)} | ${Object.entries(b.maTra).map(([k, v]) => `${k}×${v}`).join(', ')} | ${b.dat ? 'Đạt' : 'Không đạt'} |`),
+  ...bang.map((b) => `| \`${b.ten}\` | ${b.soLan} | ${f(b.min)} | ${f(b.trungVi)} | ${f(b.p95)} | ${f(b.max)} | ${Object.entries(b.maTra).map(([k, v]) => `${k}×${v}`).join(', ')} (${b.maMongDoi.join('/')}) | ${b.dat ? 'Đạt' : `Không đạt: ${lyDo(b)}`} |`),
   ``,
   `Kết quả thanh toán do bộ mô phỏng chọn: ${Object.entries(trangThaiTra).map(([k, v]) => `${k} ${v}`).join(', ')}.`,
   ``,
-  `**Kết luận:** ${datHet ? 'cả 4 API đạt p95 < 500 ms.' : 'chưa đạt, xem các dòng "Không đạt" hoặc mã HTTP lỗi ở trên.'}`,
+  `**Kết luận:** ${chayThu ? `chạy thử ${SO_LAN} lần, không dùng làm minh chứng NFR-01 (cần đúng 100 lần). ` : ''}${datHet ? `Cả 4 API đủ ${SO_LAN} mẫu, đúng mã HTTP và p95 < 500 ms.` : 'Chưa đạt, xem lý do ở cột "Đạt".'}`,
   ``,
 ];
 const md = dong.join('\n');
@@ -159,4 +168,4 @@ if (OUT) {
   writeFileSync(OUT, md, 'utf8');
   console.log(`Đã ghi kết quả vào ${OUT}`);
 }
-process.exit(datHet ? 0 : 1);
+process.exit(datHet && !chayThu ? 0 : 1);
