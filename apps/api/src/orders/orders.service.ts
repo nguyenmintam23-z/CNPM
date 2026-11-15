@@ -12,7 +12,7 @@ export const MSG_KHONG_HUY_DUOC = 'Đơn không còn ở trạng thái có thể
 export const MSG_DANG_THANH_TOAN = 'Đơn đang có một lần thanh toán đang xử lý, không hủy được';
 
 /** Đơn kèm dòng món, topping, tên món và size để trả cho khách (FR-06: hiển thị món, tùy chọn, số lượng, tổng tiền). */
-const ORDER_INCLUDE = {
+export const ORDER_INCLUDE = {
   items: {
     orderBy: { id: 'asc' },
     include: {
