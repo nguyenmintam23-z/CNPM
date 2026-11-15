@@ -84,6 +84,24 @@ git push origin v0.1.0
 
 Workflow đợi từng deploy lên trạng thái live, kiểm tra API và Web trả HTTP 200. Khi workflow xanh, tạo GitHub Release từ tag và đính kèm release notes cùng Hoàng. Lưu link workflow run, kết quả health check và xác nhận từ người ngoài nhóm đã clone, chạy theo README và mở được production.
 
+### Nạp dữ liệu mẫu lần đầu
+
+1. Trong **BrewLite-api → Environment**, đặt `SEED_STAFF_PASSWORD` và
+   `SEED_MANAGER_PASSWORD` bằng mật khẩu riêng cho hai tài khoản mẫu.
+   Nếu thiếu một trong hai biến, seed sẽ dừng và API sẽ không khởi động
+   với lệnh tạm bên dưới.
+2. Trong **BrewLite-api → Settings → Docker Command**, nhập lệnh sau
+   cho lần nạp dữ liệu mẫu đầu tiên:
+
+   ```bash
+   npm run start:prod:seed
+   ```
+
+3. Khi log báo `Seed xong` và `/health` trả HTTP `200`, xóa lệnh tạm
+   trong **Docker Command** rồi lưu. Render sẽ dùng lại lệnh mặc định
+   của Dockerfile. Dữ liệu mẫu đã được lưu trong PostgreSQL.
+
+
 ### Rollback production trên Render
 
 Workflow ghi lại deploy đang live của API và Web trước khi phát hành. Nếu phát hành lỗi, workflow yêu cầu Render khôi phục các service đã chuyển sang deploy mới, theo thứ tự Web rồi API, và kiểm tra lại health. Lần phát hành vẫn báo lỗi để nhóm kiểm tra.
