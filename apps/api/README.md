@@ -7,6 +7,7 @@ NestJS + Prisma + PostgreSQL.
 | Sản phẩm (Sprint 1) | `GET /products`, `GET /products/:id` | [`api-products.md`](api-products.md) (Duy – Phúc chốt 13/11/2026) |
 | Xác thực, health check (Task 5) | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /health` | [`api-auth.md`](api-auth.md) |
 | Tạo đơn, thanh toán (Task 5) | `POST /orders/checkout`, `POST /orders/{id}/payments` | [`api-orders.md`](api-orders.md) |
+| Xử lý đơn tại quầy (Task 5) | `GET /staff/orders`, `GET /staff/orders/{id}`, `PATCH /staff/orders/{id}/status` | [`api-staff.md`](api-staff.md) |
 
 ## Trạng thái Task 5
 
@@ -15,6 +16,7 @@ NestJS + Prisma + PostgreSQL.
 - Tạo đơn: một transaction khóa `products` theo `id` tăng dần, kiểm tra lựa chọn và tính giá ở server (`CatalogModule`), giữ tồn (`InventoryModule`), chống tạo trùng bằng `requestId` (`OrdersModule`). Xem `api-orders.md` §4.
 - Log JSON ra stdout/stderr (NFR-07, backend-operations §3); mức log theo `LOG_LEVEL`.
 - Thanh toán: `PaymentsService` tạo Payment `PROCESSING` trong một transaction, gọi `PaymentService` (mô phỏng Ví/Thẻ) ngoài transaction, áp dụng kết quả đúng một lần; thử lại sau thất bại giữ lại tồn (`api-orders.md` §6).
+- Nhân viên quầy: hàng chờ gồm đơn `CONFIRMED`, `PREPARING`, `READY`; cập nhật tiến độ từng bước, ghi có điều kiện theo trạng thái cũ nên hai nhân viên cùng bấm chỉ một yêu cầu được ghi (`api-staff.md`).
 
 ## Thanh toán mô phỏng (`src/payment`)
 
