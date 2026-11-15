@@ -97,6 +97,9 @@ curl -b cookie.txt -X POST http://localhost:3001/auth/logout
 |---|---|
 | Cà phê sữa, Trà sữa trân châu | Có size và topping |
 | Trà đào cam sả (tồn = 0) | Nhãn hết hàng, `availableQuantity = 0` |
-| Bạc xỉu, Nước suối | `imageUrl = null`; Nước suối không có size, topping |
+| Bạc xỉu | Có size, không có topping |
+| Nước suối | `imageUrl = null` (thử "ảnh nếu có", FR-01); không có size, topping |
 | Sinh tố bơ (ngừng bán) | Không có trong danh sách, chi tiết trả `404` |
 | Topping Pudding (ngừng bán) | Không hiện trong chi tiết món |
+
+Ảnh: Cà phê sữa, Trà sữa trân châu, Trà đào cam sả, Bạc xỉu có `imageUrl = /images/products/<tên file>.jpg`, file nằm trong `apps/web/public/images/products/` (PR #61). Chạy lại seed thì cập nhật `imageUrl`, không đổi tồn kho, giá.
