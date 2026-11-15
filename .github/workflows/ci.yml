@@ -136,16 +136,16 @@ jobs:
       - name: Wait for API /health and Web /healthz
         if: steps.changes.outputs.run == 'true'
         run: |
+          # curl --fail trả mã lỗi khi chưa có HTTP 2xx; nằm trong điều kiện if nên chỉ quyết định thử lại, không bỏ qua lỗi.
           for attempt in $(seq 1 90); do
-            api=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health || true)
-            web=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/healthz || true)
-            if [ "$api" = 200 ] && [ "$web" = 200 ]; then
-              echo "API $api, Web $web"
+            if curl --silent --fail --output /dev/null http://localhost:3001/health &&
+               curl --silent --fail --output /dev/null http://localhost:3000/healthz; then
+              echo "API /health và Web /healthz trả 200 sau $attempt lần thử"
               exit 0
             fi
             sleep 2
           done
-          echo "API hoặc Web chưa sẵn sàng sau 3 phút (API $api, Web $web)" >&2
+          echo "API hoặc Web chưa sẵn sàng sau 3 phút" >&2
           exit 1
 
       - name: Seed database
@@ -179,7 +179,7 @@ jobs:
 
       - name: Save Docker Compose logs
         if: always() && steps.changes.outputs.run == 'true'
-        run: docker compose logs --no-color > tests/e2e/docker-compose.log 2>&1 || true
+        run: docker compose logs --no-color > tests/e2e/docker-compose.log 2>&1
 
       - name: Upload Playwright report, trace and logs
         if: always() && steps.changes.outputs.run == 'true'
