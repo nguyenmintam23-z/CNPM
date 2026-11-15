@@ -49,4 +49,30 @@ describe('Tồn kho khi tạo đơn (FR-13, backend-data-design §5)', () => {
     expect((err as ConflictException).getResponse()).toMatchObject({ statusCode: 409, shortages: [{ productId: 'b', available: 5 }] });
     expect(update).not.toHaveBeenCalled();
   });
+
+  it('thanh toán thành công: khóa products rồi trừ cả stock và reserved theo số lượng gộp', async () => {
+    const queryRaw = jest.fn().mockResolvedValue([]);
+    const update = jest.fn();
+    const tx = { $queryRaw: queryRaw, product: { update } } as unknown as Prisma.TransactionClient;
+    await new InventoryService().commit(tx, [{ productId: 'b', quantity: 1 }, { productId: 'a', quantity: 2 }, { productId: 'b', quantity: 3 }]);
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(update.mock.calls.map((c) => [c[0].where.id, c[0].data])).toEqual([
+      ['a', { stockQuantity: { decrement: 2 }, reservedQuantity: { decrement: 2 } }],
+      ['b', { stockQuantity: { decrement: 4 }, reservedQuantity: { decrement: 4 } }],
+    ]);
+  });
+
+  it('thanh toán thất bại: chỉ giảm reserved, không đụng stock (FR-14)', async () => {
+    const update = jest.fn();
+    const tx = { $queryRaw: jest.fn().mockResolvedValue([]), product: { update } } as unknown as Prisma.TransactionClient;
+    await new InventoryService().release(tx, [{ productId: 'a', quantity: 2 }]);
+    expect(update).toHaveBeenCalledWith({ where: { id: 'a' }, data: { reservedQuantity: { decrement: 2 } } });
+  });
+
+  it('thử lại sau thất bại: khóa, kiểm tra, giữ lại; thiếu hàng thì 409 (E5)', async () => {
+    const update = jest.fn();
+    const tx = { $queryRaw: jest.fn().mockResolvedValue([row('a', 'Trà đào', 3, 3)]), product: { update } } as unknown as Prisma.TransactionClient;
+    await expect(new InventoryService().rehold(tx, [{ productId: 'a', quantity: 1 }])).rejects.toBeInstanceOf(ConflictException);
+    expect(update).not.toHaveBeenCalled();
+  });
 });
