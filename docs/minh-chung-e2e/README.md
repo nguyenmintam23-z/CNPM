@@ -40,6 +40,17 @@ Bộ mô phỏng chọn kết quả theo đơn và khóa giao dịch (70% thành
 | 7 | 4,1 s | Xác nhận thanh toán |
 | 8 | 4,4 s | Xác nhận thanh toán |
 
+## Chạy trong GitHub Actions
+
+Job `E2E Playwright` trong `.github/workflows/ci.yml` chạy cho PR vào `main` khi PR đổi `apps/web/`, `apps/api/`, `tests/e2e/`, `docker-compose.yml` hoặc chính workflow; PR khác bỏ qua các bước E2E. Job:
+
+1. Tạo `.env` với mật khẩu database và `JWT_SECRET` ngẫu nhiên, chạy `docker compose up --build -d` trong project `brewlite-e2e` (database riêng, dùng một lần trên runner).
+2. Đợi API `/health` và Web `/healthz` trả 200 (tối đa 3 phút), seed với mật khẩu tài khoản nội bộ ngẫu nhiên.
+3. Cài Playwright và Chromium, chạy `npx playwright test`.
+4. Dù test đạt hay lỗi: lưu log Docker Compose, upload artifact `e2e-playwright-<run>` gồm `playwright-report/` (HTML, có trace), `test-results/` (ảnh, trace) và `docker-compose.log`, giữ 14 ngày; rồi `docker compose down -v`.
+
+Mỗi lần chạy mất thêm khoảng 5–8 phút. Job chưa phải check bắt buộc khi merge; nhóm chốt sau khi chạy ổn định. Xem lỗi: mở run của PR → Artifacts → tải `e2e-playwright-…`, mở `playwright-report/index.html` hoặc `npx playwright show-trace test-results/<thư mục>/trace.zip`.
+
 ## Chạy lại
 
 Dùng project Compose riêng để không đụng database dev (giống `docs/minh-chung-p95`):
