@@ -64,3 +64,22 @@ docker compose exec -e 'SEED_STAFF_PASSWORD=ThayMatKhauStaffLocal' -e 'SEED_MANA
 ```
 
 Sau khi seed thành công, mở [BrewLite Web](http://localhost:3000).
+
+## Production trên Render
+
+### Nạp dữ liệu mẫu lần đầu
+
+1. Trong **BrewLite-api → Environment**, đặt `SEED_STAFF_PASSWORD` và
+   `SEED_MANAGER_PASSWORD` bằng mật khẩu riêng cho hai tài khoản mẫu.
+   Nếu thiếu một trong hai biến, seed sẽ dừng và API sẽ không khởi động
+   với lệnh tạm bên dưới.
+2. Trong **BrewLite-api → Settings → Docker Command**, nhập lệnh sau
+   cho lần nạp dữ liệu mẫu đầu tiên:
+
+   ```bash
+   npm run start:prod:seed
+   ```
+
+3. Khi log báo `Seed xong` và `/health` trả HTTP `200`, xóa lệnh tạm
+   trong **Docker Command** rồi lưu. Render sẽ dùng lại lệnh mặc định
+   của Dockerfile. Dữ liệu mẫu đã được lưu trong PostgreSQL.
