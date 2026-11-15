@@ -34,17 +34,19 @@ Log có 11 loại sự kiện: `user_registered`, `login_succeeded`, `login_fail
 
 Thử script có bắt được lỗi: chạy với `SEED_STAFF_PASSWORD` sai thì các bước nhân viên ghi **Sai** và script trả mã 1 (đã thử ngày 15/11/2026).
 
-Giống cách đo p95 ([`docs/minh-chung-p95/README.md`](../minh-chung-p95/README.md)), dùng project Compose riêng để không đụng database dev:
+Giống cách đo p95 ([`docs/minh-chung-p95/README.md`](../minh-chung-p95/README.md)), dùng project Compose riêng để không đụng database dev.
+
+Trước tiên đặt hai biến môi trường `SEED_STAFF_PASSWORD`, `SEED_MANAGER_PASSWORD` bằng mật khẩu tự chọn cho database thử (Bash: `export SEED_STAFF_PASSWORD=<mật khẩu>`; PowerShell: `$env:SEED_STAFF_PASSWORD = "<mật khẩu>"`). Lệnh seed lấy hai biến này từ shell, script đăng nhập tài khoản nhân viên và quản lý cũng dùng chúng. Không ghi mật khẩu vào repo.
 
 ```bash
 docker compose stop
 docker compose -p brewlite-mc down -v
 docker compose -p brewlite-mc up --build -d
-docker compose -p brewlite-mc exec -e SEED_STAFF_PASSWORD='Staff@12345' -e SEED_MANAGER_PASSWORD='Manager@12345' api npx prisma db seed
-SEED_STAFF_PASSWORD='Staff@12345' SEED_MANAGER_PASSWORD='Manager@12345' node tests/smoke/minh-chung-api.mjs --out docs/minh-chung-api/ket-qua.md
+docker compose -p brewlite-mc exec -e SEED_STAFF_PASSWORD -e SEED_MANAGER_PASSWORD api npx prisma db seed
+node tests/smoke/minh-chung-api.mjs --out docs/minh-chung-api/ket-qua.md
 ```
 
-PowerShell: đặt biến bằng `$env:SEED_STAFF_PASSWORD='Staff@12345'; $env:SEED_MANAGER_PASSWORD='Manager@12345'` rồi chạy lệnh `node`. Script trả mã 0 khi mọi bước đạt.
+Script trả mã 0 khi mọi bước đạt; thiếu một trong hai biến thì dừng với mã 2.
 
 Thử health khi mất database, rồi lưu log:
 

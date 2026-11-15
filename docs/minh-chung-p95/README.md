@@ -21,10 +21,10 @@ Lần đo chạy trong một project Compose riêng tên `brewlite-p95`, có vol
 2. Đợi `http://localhost:3001/health` trả `{"status":"ok"}`, rồi seed:
 
    ```bash
-   docker compose -p brewlite-p95 exec -e SEED_STAFF_PASSWORD='Staff@12345' -e SEED_MANAGER_PASSWORD='Manager@12345' api npx prisma db seed
+   docker compose -p brewlite-p95 exec -e SEED_STAFF_PASSWORD -e SEED_MANAGER_PASSWORD api npx prisma db seed
    ```
 
-   Container `api` chạy với `NODE_ENV=production`, nên seed bắt buộc có hai biến mật khẩu này (`prisma/seed.ts`). Hai giá trị trên chỉ là mẫu cho database đo, có thể đổi. Cách seed giống `README.md` ở thư mục gốc (đã thêm hai biến này ở PR #69), chỉ khác là có `-p brewlite-p95`.
+   Container `api` chạy với `NODE_ENV=production`, nên seed bắt buộc có hai biến mật khẩu này (`prisma/seed.ts`). Đặt hai biến này trong shell trước khi chạy (Bash: `export SEED_STAFF_PASSWORD=<mật khẩu>`; PowerShell: `$env:SEED_STAFF_PASSWORD = "<mật khẩu>"`), bằng mật khẩu tự chọn cho database đo; lệnh trên lấy giá trị từ shell nên không ghi mật khẩu vào repo. Cách seed giống `README.md` ở thư mục gốc (đã thêm hai biến này ở PR #69), chỉ khác là có `-p brewlite-p95`.
 
 3. Đo và ghi kết quả:
 
