@@ -190,5 +190,54 @@ Gửi thêm trường lạ, ví dụ `amount` hay kịch bản mô phỏng, bị
 
 - Tạo `idempotencyKey` khi khách bấm **Xác nhận thanh toán**, giữ đến khi có kết quả cuối.
 - `202`: hiển thị **Đang xử lý**, gửi lại cùng khóa sau 2–3 giây (E6).
-- `FAILED`: hiển thị `failureReason`, nút **Thử lại** tạo khóa mới. `409 shortages`: báo món hết, đơn vẫn chờ thanh toán (khách có thể hủy đơn, FR-23, PR sau).
+- `FAILED`: hiển thị `failureReason`, nút **Thử lại** tạo khóa mới. `409 shortages`: báo món hết, đơn vẫn chờ thanh toán (khách có thể hủy đơn, FR-23, xem mục 7).
 - `SUCCEEDED`: hiển thị `orderCode` và trạng thái **Đã xác nhận** (UC-01 bước 12).
+
+## 7. Lịch sử, chi tiết và hủy đơn (FR-08, FR-23, FR-24)
+
+Cả ba endpoint chỉ dành cho `CUSTOMER`. Chưa đăng nhập → `401`; vai trò khác → `403` (NFR-02).
+
+### `GET /orders?page=1&pageSize=20`
+
+Lịch sử đơn của tài khoản đang đăng nhập, mới nhất trước (FR-08). Mỗi đơn có `orderCode`, `createdAt`, `totalAmount`, `status` và `id` để mở chi tiết. Đơn đã hủy vẫn nằm trong lịch sử với `status = CANCELLED` (FR-24).
+
+Phân trang là **[Đề xuất]**, SRS không yêu cầu: `page` mặc định 1 (tối thiểu 1); `pageSize` mặc định 20, tối đa 50.
+
+Response `200`:
+
+```json
+{ "items": [ /* đơn theo cùng cấu trúc như mục 3 */ ], "page": 1, "pageSize": 20, "total": 21 }
+```
+
+Không có đơn: `items` rỗng, `total = 0`; web hiển thị thông báo phù hợp (FR-08). `400` nếu `page` hoặc `pageSize` không phải số nguyên hợp lệ.
+
+### `GET /orders/{id}`
+
+Chi tiết một đơn, cùng cấu trúc như mục 3 (FR-08).
+
+- `200`: đơn của khách, kể cả đơn đã hủy (FR-24).
+- `400`: `id` không phải UUID.
+- `403`: đơn của tài khoản khác, không trả chi tiết (FR-08). Dùng `403` như mục 6.
+- `404`: không có đơn.
+
+### `POST /orders/{id}/cancel`
+
+Hủy đơn chưa thanh toán, giải phóng tồn còn giữ đúng một lần (FR-23). Không có body.
+
+- `200`: đơn đã hủy, `status = CANCELLED`, `stockHoldStatus = RELEASED`. Nếu tồn đã được trả lại sau lần thanh toán thất bại thì không trả thêm (FR-23).
+- Đơn đã hủy trước đó: trả `200` với đơn hiện tại, không đổi gì. **[Đề xuất]**
+- `409 ORDER_NOT_CANCELLABLE`: đơn không còn chờ thanh toán, tức đã xác nhận trở đi (`orderStatus` kèm theo) (FR-23).
+- `409 PAYMENT_IN_PROGRESS`: đang có lần thanh toán chưa xong (FR-23). Đợi kết quả, rồi thử lại.
+- `400`, `403`, `404` như mục `GET /orders/{id}`.
+
+Hủy và thanh toán khóa cùng dòng đơn, nên khi gửi đồng thời chỉ một thao tác được chấp nhận (FR-23; backend-data-design §5).
+
+### Đơn đã hủy (FR-24)
+
+- Thanh toán mới cho đơn đã hủy bị từ chối bằng `409 ORDER_NOT_PAYABLE` (mục 6); đơn vẫn `CANCELLED`.
+- Không vào hàng chờ nhân viên và không cập nhật tiến độ được: phần này thuộc API nhân viên (FR-09, FR-10), làm ở PR sau.
+
+### Gợi ý cho BrewLite Web
+
+- Nút **Hủy đơn** chỉ hiện khi `status = PENDING_PAYMENT` và không có thanh toán đang xử lý. Vẫn phải xử lý `409`, thông báo và tải lại trạng thái mới (frontend-architecture §7.4).
+- Web không tự hoàn trả tồn kho; server làm việc này (frontend-architecture §7.4).
