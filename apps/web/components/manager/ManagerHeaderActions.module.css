@@ -1,0 +1,72 @@
+/* FR-11: buttons shared by manager list and detail pages. */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.refreshButton,
+.logoutButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.refreshButton {
+  border: 1px solid #244a16;
+  background: #244a16;
+  color: #fff;
+}
+
+.refreshButton:hover:not(:disabled) {
+  border-color: #173b20;
+  background: #173b20;
+}
+
+.logoutButton {
+  border: 1px solid #244a16;
+  background: #fffdf7;
+  color: #173b20;
+}
+
+.logoutButton:hover:not(:disabled) {
+  background: #eaf0dd;
+}
+
+.refreshButton:disabled,
+.logoutButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.refreshButton:focus-visible,
+.logoutButton:focus-visible {
+  outline: 3px solid #86a65f;
+  outline-offset: 3px;
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: #9f2929;
+  font-size: 13px;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .actions { width: 100%; justify-content: flex-start; }
+  .refreshButton, .logoutButton { flex: 1; }
+  .error { text-align: left; }
+}

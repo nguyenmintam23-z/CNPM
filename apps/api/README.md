@@ -6,13 +6,19 @@ NestJS + Prisma + PostgreSQL.
 |---|---|---|
 | Sản phẩm (Sprint 1) | `GET /products`, `GET /products/:id` | [`api-products.md`](api-products.md) (Duy – Phúc chốt 13/11/2026) |
 | Xác thực, health check (Task 5) | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /health` | [`api-auth.md`](api-auth.md) |
+| Tạo đơn, thanh toán (Task 5) | `POST /orders/checkout`, `POST /orders/{id}/payments` | [`api-orders.md`](api-orders.md) |
+| Xử lý đơn tại quầy (Task 5) | `GET /staff/orders`, `GET /staff/orders/{id}`, `PATCH /staff/orders/{id}/status` | [`api-staff.md`](api-staff.md) |
+| Tra cứu đơn cho quản lý (Task 5) | `GET /manager/orders`, `GET /manager/orders/{id}` | [`api-manager.md`](api-manager.md) |
 
 ## Trạng thái Task 5
 
 - Mọi API cần đăng nhập (JWT trong cookie HttpOnly, ADR-001), trừ đăng ký, đăng nhập, đăng xuất và `/health`. Giới hạn "menu chưa cần đăng nhập" của Sprint 1 đã bỏ: chưa đăng nhập thì `GET /products` trả `401` (FR-01).
-- Bảng đã có: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`, `users`. Các bảng `orders`, `order_items`, `order_item_toppings`, `payments` thêm bằng migration mới khi chốt schema đơn hàng.
+- Bảng đã có: `products`, `sizes`, `toppings`, `product_sizes`, `product_toppings`, `users`, `orders`, `order_items`, `order_item_toppings`, `payments` (schema đơn hàng do Đại phụ trách, PR #54).
+- Tạo đơn: một transaction khóa `products` theo `id` tăng dần, kiểm tra lựa chọn và tính giá ở server (`CatalogModule`), giữ tồn (`InventoryModule`), chống tạo trùng bằng `requestId` (`OrdersModule`). Xem `api-orders.md` §4.
 - Log JSON ra stdout/stderr (NFR-07, backend-operations §3); mức log theo `LOG_LEVEL`.
-- `PaymentService` (bộ mô phỏng Ví/Thẻ) đã có trong `PaymentModule`; endpoint `POST /orders/{id}/payments` thêm khi có bảng `orders`, `payments`.
+- Thanh toán: `PaymentsService` tạo Payment `PROCESSING` trong một transaction, gọi `PaymentService` (mô phỏng Ví/Thẻ) ngoài transaction, áp dụng kết quả đúng một lần; thử lại sau thất bại giữ lại tồn (`api-orders.md` §6).
+- Nhân viên quầy: hàng chờ gồm đơn `CONFIRMED`, `PREPARING`, `READY`; cập nhật tiến độ từng bước, ghi có điều kiện theo trạng thái cũ nên hai nhân viên cùng bấm chỉ một yêu cầu được ghi (`api-staff.md`).
+- Quản lý: tra cứu mọi đơn, lọc theo trạng thái; chi tiết có các lần thanh toán và lý do thất bại (`api-manager.md`). Chỉ đọc.
 
 ## Thanh toán mô phỏng (`src/payment`)
 
@@ -93,6 +99,9 @@ curl -b cookie.txt -X POST http://localhost:3001/auth/logout
 |---|---|
 | Cà phê sữa, Trà sữa trân châu | Có size và topping |
 | Trà đào cam sả (tồn = 0) | Nhãn hết hàng, `availableQuantity = 0` |
-| Bạc xỉu, Nước suối | `imageUrl = null`; Nước suối không có size, topping |
+| Bạc xỉu | Có size, không có topping |
+| Nước suối | `imageUrl = null` (thử "ảnh nếu có", FR-01); không có size, topping |
 | Sinh tố bơ (ngừng bán) | Không có trong danh sách, chi tiết trả `404` |
 | Topping Pudding (ngừng bán) | Không hiện trong chi tiết món |
+
+Ảnh: Cà phê sữa, Trà sữa trân châu, Trà đào cam sả, Bạc xỉu có `imageUrl = /images/products/<tên file>.jpg`, file nằm trong `apps/web/public/images/products/` (PR #61). Chạy lại seed thì cập nhật `imageUrl`, không đổi tồn kho, giá.
