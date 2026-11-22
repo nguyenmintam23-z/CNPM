@@ -112,7 +112,7 @@ export default function CustomerOrderDetail({ id }: { id: string }) {
            <div><p className={styles.label}>Tổng tiền</p><p className={styles.bigValue}>{customerMoney(order.totalAmount)}</p></div>
          </div>
          {canCancelCustomerOrder(order.status) && <div className={styles.cancelArea}>
-           <p className={styles.muted}>Bạn có thể hủy khi đơn còn chờ thanh toán. Backend sẽ kiểm tra lần cuối trước khi hủy.</p>
+           <p className={styles.muted}>Bạn chỉ hủy được khi đơn còn chờ thanh toán.</p>
            <button className={styles.dangerButton} disabled={canceling} onClick={() => void cancelOrder()}>{canceling ? "Đang xử lý…" : "Hủy đơn"}</button>
          </div>}
          {cancelMessage && <p role="status" className={styles.message}>{cancelMessage}</p>}

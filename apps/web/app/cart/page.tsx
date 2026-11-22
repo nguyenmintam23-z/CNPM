@@ -121,7 +121,6 @@ export default function CartPage() {
           <span className="text-sm font-semibold text-[#668449]">BrewLite</span>
         </div>
         <h1 className="mt-7 font-display text-3xl font-bold sm:text-4xl">Giỏ hàng của bạn</h1>
-        <p className="mt-2 text-sm text-[#61705b]">Giỏ hàng được lưu riêng cho tài khoản đang đăng nhập trên trình duyệt này.</p>
         {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         {notice && <p role="status" className="mt-4 rounded-xl bg-[#eaf0dd] p-3 text-sm font-semibold text-[#244A16]">{notice}</p>}
         {items.length === 0 ? (
@@ -193,7 +192,7 @@ export default function CartPage() {
             <aside className="rounded-[24px] border border-[#e8e2cf] bg-[#fffdf7] p-6 shadow-sm">
               <h2 className="text-xl font-bold">Tổng kết giỏ hàng</h2>
               <div className="mt-4 flex justify-between gap-4 border-b border-[#eeeadb] pb-4 font-bold"><span>Tạm tính</span><span className="text-[#244A16]">{formatVnd(cartTotal(items))}</span></div>
-              <p className="mt-4 text-xs leading-5 text-[#61705b]">Giá và tồn kho sẽ được Backend xác nhận lại khi tạo đơn.</p>
+              <p className="mt-4 text-xs leading-5 text-[#61705b]">Giá và số lượng còn lại sẽ được xác nhận khi đặt đơn.</p>
               <Link href="/checkout" className="mt-5 block w-full rounded-xl bg-[#244A16] px-4 py-3 text-center font-semibold text-white hover:bg-[#173B20]">Tiếp tục đặt đơn</Link>
             </aside>
           </div>

@@ -142,7 +142,7 @@ export default function StaffOrders() {
       setNotice(to === "COMPLETED" ? "Đã hoàn tất đơn, đơn sẽ rời hàng chờ." : "Cập nhật trạng thái thành công.");
       setReload((value) => value + 1);
     } catch {
-      setError("Không kết nối được Backend. Hãy tải lại để kiểm tra trạng thái trước khi thao tác tiếp.");
+      setError("Không kết nối được hệ thống, vui lòng thử lại.");
     } finally {
       setBusyId(null);
     }

@@ -52,7 +52,7 @@ export default function RegisterPage() {
       const body: unknown = await response.json().catch(() => null);
       setError(getErrorMessage(body, "Không thể tạo tài khoản. Vui lòng thử lại."));
     } catch {
-      setError("Không thể kết nối hệ thống đăng ký. Kiểm tra Backend và thử lại.");
+      setError("Không kết nối được hệ thống, vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
