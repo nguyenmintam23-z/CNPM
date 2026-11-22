@@ -84,7 +84,7 @@ export default function LoginPage() {
       router.replace(destination);
       router.refresh();
     } catch {
-      setError("Không thể kết nối hệ thống đăng nhập. Kiểm tra Backend và thử lại.");
+      setError("Không kết nối được hệ thống, vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
