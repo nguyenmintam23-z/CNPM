@@ -90,7 +90,7 @@ curl -b cookie.txt -X POST http://localhost:3001/auth/logout
 
 - Đổi schema: sửa `prisma/schema.prisma`, rồi `npm run prisma:migrate:dev -- --name <ten-thay-doi>` để tạo file migration mới và commit file đó.
 - Production: chạy `prisma migrate deploy` mỗi lần deploy API, trước khi API nhận request (backend-data-design §6).
-- Seed **chạy riêng**, không đặt trong lệnh start hay Dockerfile. Seed dùng id cố định và `upsert`, nên chạy lại không tạo trùng và không ghi đè tồn kho đã có.
+- Seed **chạy riêng**, không đặt trong lệnh start hay Dockerfile. Seed dùng id cố định và `upsert`, nên chạy lại không tạo trùng. Món đang bán có tồn kho seed 500; chạy lại chỉ nạp thêm khi tồn kho thấp hơn mức này (không giảm).
 - Ràng buộc `CHECK` tồn kho không âm, không giữ quá số tồn được thêm tay trong migration đầu tiên (backend-data-design §4.3), vì Prisma schema chưa khai báo được `CHECK`.
 
 ## Dữ liệu seed
@@ -103,5 +103,6 @@ curl -b cookie.txt -X POST http://localhost:3001/auth/logout
 | Nước suối | `imageUrl = null` (thử "ảnh nếu có", FR-01); không có size, topping |
 | Sinh tố bơ (ngừng bán) | Không có trong danh sách, chi tiết trả `404` |
 | Topping Pudding (ngừng bán) | Không hiện trong chi tiết món |
+| 10 món thêm (cà phê, trà, trà sữa, cacao) và 5 topping thêm | Menu đủ món để demo; chưa có ảnh nên `imageUrl = null` |
 
-Ảnh: Cà phê sữa, Trà sữa trân châu, Trà đào cam sả, Bạc xỉu có `imageUrl = /images/products/<tên file>.jpg`, file nằm trong `apps/web/public/images/products/` (PR #61). Chạy lại seed thì cập nhật `imageUrl`, không đổi tồn kho, giá.
+Ảnh: Cà phê sữa, Trà sữa trân châu, Trà đào cam sả, Bạc xỉu có `imageUrl = /images/products/<tên file>.jpg`, file nằm trong `apps/web/public/images/products/` (PR #61). Chạy lại seed thì cập nhật `imageUrl`, nạp thêm tồn kho như trên, không đổi giá.
