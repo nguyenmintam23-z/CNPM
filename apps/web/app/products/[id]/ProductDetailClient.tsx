@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveProductImage } from "../../../lib/product-images";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -83,7 +84,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
     const result = addCartItem(readCart(userId), {
       productId: product.id,
       productName: product.name,
-      imageUrl: product.imageUrl,
+      imageUrl: resolveProductImage(product.name, product.imageUrl),
       basePrice: product.basePrice,
       sizeId,
       sizeName: chosenSize?.name ?? null,
@@ -117,7 +118,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
   }
 
   const available = product.availableQuantity > 0;
-  const image = product.imageUrl && !product.imageUrl.includes("placeholder.com") ? product.imageUrl : null;
+  const image = resolveProductImage(product.name, product.imageUrl);
   const max = Math.min(MAX_QUANTITY, product.availableQuantity);
 
   return (

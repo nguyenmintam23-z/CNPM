@@ -1,3 +1,4 @@
+import { resolveProductImage } from "../../lib/product-images";
 import type { ReactNode } from "react";
 import Link from "next/link";
 
@@ -76,8 +77,7 @@ function StatePanel({
 
 function ProductCard({ product }: { product: Product }) {
   const available = product.availableQuantity > 0;
-  const image = product.imageUrl && !product.imageUrl.includes("placeholder.com")
-    ? product.imageUrl : null;
+  const image = resolveProductImage(product.name, product.imageUrl);
 
   return (
     <a href={`/products/${encodeURIComponent(product.id)}`} aria-label={`Xem chi tiết ${product.name}`} className="block rounded-[26px] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#A8BF8370]">
