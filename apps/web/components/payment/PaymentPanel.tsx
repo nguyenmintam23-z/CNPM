@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { saveCheckoutRecord } from "../../lib/checkout";
+import { completePaidCheckout, isPaidOrderStatus, saveCheckoutRecord } from "../../lib/checkout";
 import { formatVnd } from "../../lib/product";
 import {
   canStartNewPayment,
@@ -155,6 +155,11 @@ export default function PaymentPanel({ order, userId, onOrderUpdated, returnTo }
     verification.key === verificationKey && !verification.message;
   const verificationError = verification.key === verificationKey ? verification.message : undefined;
 
+  // Trường hợp đơn được xác nhận sau trạng thái PROCESSING hoặc sau khi tải lại trang.
+  useEffect(() => {
+    if (ready && paid) completePaidCheckout(userId, order.id, order.status);
+  }, [ready, paid, userId, order.id, order.status]);
+
   async function submitPayment(checkExisting: boolean) {
     if (busy || !ready || !userId || paid || order.status !== "PENDING_PAYMENT") return;
     if (!checkExisting && !canStartNewPayment(attempt)) {
@@ -220,6 +225,9 @@ export default function PaymentPanel({ order, userId, onOrderUpdated, returnTo }
         };
         persistPayment(storageKey, next);
         onOrderUpdated(payload.order.status, payload.order.stockHoldStatus);
+        if (state === "SUCCEEDED" && isPaidOrderStatus(payload.order.status)) {
+          completePaidCheckout(userId, order.id, payload.order.status);
+        }
         if (state === "PROCESSING") {
           setError("Giao dịch đang được xử lý. Hãy kiểm tra lại sau vài giây; hệ thống sẽ dùng cùng mã giao dịch.");
         } else if (state === "FAILED") {
@@ -298,7 +306,7 @@ export default function PaymentPanel({ order, userId, onOrderUpdated, returnTo }
             ))}
           </div>
           <p className="mt-4 text-sm">
-            Số tiền Backend xác nhận: <strong>{formatVnd(order.totalAmount)}</strong>
+            Số tiền cần thanh toán: <strong>{formatVnd(order.totalAmount)}</strong>
           </p>
           {failed && (
             <p role="status" className="mt-3 rounded-xl bg-[#fff1e9] p-3 text-[#8b3a29]">
@@ -317,7 +325,7 @@ export default function PaymentPanel({ order, userId, onOrderUpdated, returnTo }
             onClick={() => void submitPayment(ongoing)}
             className="mt-5 w-full rounded-xl bg-[#244A16] px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {busy ? "Đang liên hệ Backend..."
+            {busy ? "Đang xử lý..."
               : ongoing ? "Kiểm tra lại kết quả"
                 : failed ? "Thử thanh toán lần mới" : "Xác nhận thanh toán mô phỏng"}
           </button>

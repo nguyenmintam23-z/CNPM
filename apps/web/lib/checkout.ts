@@ -2,6 +2,8 @@ import {
   MAX_CART_LINES,
   MAX_QUANTITY,
   MAX_TOPPINGS,
+  readCart,
+  saveCart,
   type CartItem,
 } from "./cart";
 
@@ -132,4 +134,28 @@ export function saveCheckoutRecord(key: string, value: unknown): boolean {
 
 export function requestIdValid(value: unknown): value is string {
   return typeof value === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(value);
+}
+
+// Chỉ dọn giỏ của đúng đơn vừa được hệ thống xác nhận thanh toán.
+// Không xóa món mới thêm hoặc bản nháp của một đơn khác.
+export function isPaidOrderStatus(status: string): boolean {
+  return ["CONFIRMED", "PREPARING", "READY", "COMPLETED"].includes(status);
+}
+
+export function completePaidCheckout(userId: string, orderId: string, status: string): boolean {
+  if (typeof window === "undefined" || !userId || !orderId || !isPaidOrderStatus(status)) return false;
+  const saved = loadCheckoutRecord<SavedOrder>(checkoutStorageKey(userId, "order"));
+  if (!saved || !isCreatedOrder(saved.order) || saved.order.id !== orderId ||
+      typeof saved.fingerprint !== "string") return false;
+  const items = readCart(userId);
+  if (items.length === 0 || checkoutFingerprint(items) !== saved.fingerprint) return false;
+  if (!saveCart([], userId)) return false;
+
+  // Giữ bản ghi "order" để có thể tải lại trang xác nhận thanh toán.
+  const draftKey = checkoutStorageKey(userId, "draft");
+  const draft = loadCheckoutRecord<SavedDraft>(draftKey);
+  if (draft?.fingerprint === saved.fingerprint) {
+    try { window.localStorage.removeItem(draftKey); } catch { /* Không ảnh hưởng đơn đã thanh toán. */ }
+  }
+  return true;
 }

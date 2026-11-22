@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { cartTotal, unitPrice, useCartItems, userIdFromSession } from "../../lib/cart";
 import { formatVnd } from "../../lib/product";
 import {
-  checkoutErrorText, checkoutFingerprint, checkoutItems, checkoutStorageKey,
+  checkoutErrorText, checkoutFingerprint, checkoutItems, checkoutStorageKey, isPaidOrderStatus,
   isCheckoutError, isCreatedOrder, loadCheckoutRecord, requestIdValid,
   saveCheckoutRecord, validateCheckoutCart,
   type CheckoutError, type SavedDraft, type SavedOrder,
@@ -30,8 +30,12 @@ export default function CheckoutPage() {
   const items = useCartItems(userId);
   const fingerprint = useMemo(() => checkoutFingerprint(items), [items]);
   const validationError = validateCheckoutCart(items);
-  const order = storedOrder?.userId === userId && storedOrder.fingerprint === fingerprint
-    ? storedOrder.order : null;
+  // Giữ trang xác nhận đơn đã thanh toán ngay cả khi giỏ vừa được xóa.
+  // Khi khách chọn món mới, fingerprint sẽ khác và checkout bắt đầu đơn mới.
+  const order = storedOrder?.userId === userId && (
+    storedOrder.fingerprint === fingerprint ||
+    (items.length === 0 && isPaidOrderStatus(storedOrder.order.status))
+  ) ? storedOrder.order : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,14 +74,16 @@ export default function CheckoutPage() {
       if (!userId) return;
       const saved = loadCheckoutRecord<SavedOrder>(checkoutStorageKey(userId, "order"));
       if (!active) return;
-      setStoredOrder(saved && saved.fingerprint === fingerprint && isCreatedOrder(saved.order)
-        ? { ...saved, userId } : null);
+      setStoredOrder(saved && isCreatedOrder(saved.order) && (
+        saved.fingerprint === fingerprint ||
+        (items.length === 0 && isPaidOrderStatus(saved.order.status))
+      ) ? { ...saved, userId } : null);
       setError("");
       setIssues(null);
     }
     void restoreOrder();
     return () => { active = false; };
-  }, [userId, fingerprint]);
+  }, [userId, fingerprint, items.length]);
 
   async function confirmOrder() {
     if (!userId || session !== "authenticated" || submitting || order || validationError) return;
@@ -182,7 +188,7 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-5 flex justify-between gap-3 text-xl font-bold"><span>Tổng tiền Backend xác nhận</span><span>{formatVnd(order.totalAmount)}</span></div>
+            <div className="mt-5 flex justify-between gap-3 text-xl font-bold"><span>Tổng tiền</span><span>{formatVnd(order.totalAmount)}</span></div>
             <PaymentPanel
               order={order}
               userId={userId ?? ""}
@@ -220,7 +226,7 @@ export default function CheckoutPage() {
             <aside className="rounded-2xl border border-[#e8e2cf] bg-[#fffdf7] p-6 shadow-sm">
               <h2 className="text-xl font-bold">Tổng kết đơn hàng</h2>
               <div className="mt-4 flex justify-between gap-3 border-b pb-4 font-bold"><span>Tạm tính</span><span>{formatVnd(cartTotal(items))}</span></div>
-              <p className="mt-4 text-sm leading-6 text-[#61705b]">Backend sẽ kiểm tra lại giá và tồn kho. Chưa thu tiền tại bước này.</p>
+              <p className="mt-4 text-sm leading-6 text-[#61705b]">Giá và số lượng còn lại sẽ được xác nhận khi đặt đơn. Bạn chưa cần thanh toán ở bước này.</p>
               {validationError && <p role="alert" className="mt-4 text-sm text-red-700">{validationError}</p>}
               {error && <p role="alert" className="mt-4 text-sm font-semibold text-red-700">{error}</p>}
               <button type="button" disabled={Boolean(validationError) || submitting} onClick={() => void confirmOrder()}

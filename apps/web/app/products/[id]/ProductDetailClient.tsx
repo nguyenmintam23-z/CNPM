@@ -179,7 +179,7 @@ export default function ProductDetailClient({ id }: { id: string }) {
             )}
             <div className="mt-7 border-t border-[#e8e2cf] pt-6">
               <div className="flex items-center justify-between gap-3 text-lg font-bold"><span>Tạm tính</span><span className="text-[#244A16]">{formatVnd(unit * quantity)}</span></div>
-              <p className="mt-2 text-xs leading-5 text-[#65725a]">Giá và tồn kho cuối cùng sẽ do Backend kiểm tra khi đặt đơn.</p>
+              <p className="mt-2 text-xs leading-5 text-[#65725a]">Giá sẽ được xác nhận khi đặt đơn.</p>
               {notice && <p role="alert" className="mt-3 text-sm font-semibold text-[#a33f2c]">{notice}</p>}
               <button type="button" disabled={!available || !userId} onClick={addToCart} className="mt-5 w-full rounded-2xl bg-[#244A16] px-5 py-3.5 font-bold text-white hover:bg-[#173B20] disabled:cursor-not-allowed disabled:opacity-45">Thêm vào giỏ hàng</button>
             </div>
