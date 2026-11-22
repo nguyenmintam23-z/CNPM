@@ -95,7 +95,7 @@ test('khách đặt trà sữa, thanh toán và theo dõi đơn trên màn hình
     await page.getByRole('button', { name: 'Xác nhận đặt đơn' }).click();
     const don = page.getByRole('region', { name: 'Đơn hàng đã tạo' });
     await expect(don).toContainText('Chờ thanh toán');
-    await expect(don).toContainText(/Tổng tiền Backend xác nhận\s*104\.000\s₫/); // số tiền định dạng có dấu cách không ngắt
+    await expect(don).toContainText(/Tổng tiền\s*104\.000\s₫/); // số tiền định dạng có dấu cách không ngắt
     const tieuDe = await don.getByRole('heading', { name: /^Mã đơn: BL-/ }).textContent();
     maDon = (tieuDe ?? '').replace('Mã đơn:', '').trim();
     expect(maDon).toMatch(/^BL-\d{6}-[A-Z0-9]{5}$/);
@@ -116,7 +116,7 @@ test('khách đặt trà sữa, thanh toán và theo dõi đơn trên màn hình
       daBam.push(ten);
       if (ten === 'Kiểm tra lại kết quả') await page.waitForTimeout(5_500); // phản hồi chậm mặc định 5 giây
       await nut.click();
-      await expect(tt.getByRole('button', { name: 'Đang liên hệ Backend...' })).toHaveCount(0);
+      await expect(tt.getByRole('button', { name: 'Đang xử lý...' })).toHaveCount(0);
     }
     test.info().annotations.push({ type: 'thanh-toan', description: daBam.join(' → ') });
     await expect(thanhCong).toBeVisible();
@@ -124,6 +124,12 @@ test('khách đặt trà sữa, thanh toán và theo dõi đơn trên màn hình
     await expect(page.getByRole('region', { name: 'Đơn hàng đã tạo' })).toContainText('Trạng thái: Đã xác nhận');
     await khongCuonNgang(page);
     await chup(page, 'thanh-toan-thanh-cong');
+  });
+
+  await test.step('Giỏ hàng trống sau khi thanh toán thành công', async () => {
+    await page.goto('/cart');
+    await expect(page.getByRole('heading', { name: 'Giỏ hàng đang trống' })).toBeVisible();
+    await khongCuonNgang(page);
   });
 
   await test.step('Theo dõi đơn trong "Đơn hàng của tôi" (FR-08)', async () => {
